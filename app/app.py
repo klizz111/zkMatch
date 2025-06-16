@@ -18,6 +18,7 @@ _db_initialized = False
 
 def init_database():
     """初始化数据库"""
+    print("正在初始化数据库...")
     global _db_initialized
     if not _db_initialized:
         db_path = app.config['DATABASE_PATH']

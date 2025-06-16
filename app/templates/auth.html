@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>零知识证明登录系统</title>
+    <title>zk-login</title>
     <style>
         * {
             margin: 0;
@@ -369,7 +369,7 @@
 <body>
     <div class="container">
         <div class="left-panel">
-            <h1>🔐 零知识登录</h1>
+            <h1>🔐 zk-login</h1>
             <p>基于ElGamal加密和零知识证明的安全认证系统。无需传输密码，通过数学证明验证身份。</p>
             <br>
             <p>✨ 安全的用户注册系统<br>
@@ -414,7 +414,7 @@
                     <input type="password" id="loginSeed" placeholder="输入密码种子" class="seed-input">
                 </div>
                 
-                <button class="btn" onclick="login()">零知识登录</button>
+                <button class="btn" onclick="login()">登录</button>
                 
                 <div id="loginResult"></div>
             </div>
@@ -449,11 +449,16 @@
             const seed = secureElgamal.generateReadableSeed();
             document.getElementById('regSeed').value = seed;
             
+            // 复制到剪贴板
+            navigator.clipboard.writeText(seed).then().catch(err => {
+                console.error('无法复制种子到剪贴板:', err);
+            });
+            
             // 显示种子信息
             const seedInfo = document.createElement('div');
             seedInfo.className = 'seed-display';
             seedInfo.innerHTML = `
-                <strong>生成的安全种子:</strong><br>
+                <strong>生成的安全种子:(已复制到剪贴板)</strong><br>
                 ${seed}<br>`;
             
             // 移除之前的种子信息显示

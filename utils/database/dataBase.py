@@ -3,7 +3,7 @@ from typing import List, Tuple, Any, Optional
 import logging
 import secrets
 import datetime
-from ..mathlib.elgamal import ElGamal
+from ..elgamal.elgamal import ElGamal
 
 class DatabaseManager:
     def __init__(self, db_path: str):

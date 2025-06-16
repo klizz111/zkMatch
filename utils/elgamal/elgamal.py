@@ -59,6 +59,9 @@ class ElGamal:
         
         # 生成私钥 x ∈ [1, q-1]
         self.x = crypto_random.randrange(1, self.q)
+        
+        # 刷新公钥 y
+        self.y = pow(self.g, self.x, self.p)
     
     def set_pkg(self, p, g, y):
         """设置公钥参数"""
@@ -118,8 +121,10 @@ class ElGamal:
     
     def check_m(self, m):
         """检查消息是否有效"""
-        if m >= self.p or m < 2:
-            raise ValueError("Invalid message: m must be in [2, p-1]")
+        if m >= self.p or m < 1:  
+            raise ValueError(f"Invalid message: m must be in [1, p-1], got {m}")
+        if m == 0:
+            raise ValueError("Message cannot be 0")
 
 # 使用示例
 if __name__ == "__main__":
