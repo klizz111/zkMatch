@@ -9,7 +9,7 @@ class AuthService:
     def __init__(self, db_manager: DatabaseManager):
         self.db = db_manager
     
-    def register_user_step1(self, username: str, seed_hash: str) -> Dict[str, Any]:
+    def register_user_step1(self, username: str) -> Dict[str, Any]:
         """用户注册第一步：获取群参数"""
         try:
             # 检查用户名是否已存在
@@ -34,7 +34,6 @@ class AuthService:
                 'g': g,
                 'q': q,
                 'y': '',  # 暂时为空，等待客户端计算
-                'seed_hash': seed_hash,
                 'compressed_credential': '',  # 暂时为空
                 'bits': 512  # 固定为512位
             }

@@ -35,7 +35,6 @@ class SecureElGamal {
             },
             body: JSON.stringify({
                 username: username,
-                seed_hash: await this.hashSeed(seed)
             })
         });
         

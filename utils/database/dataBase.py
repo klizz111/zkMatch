@@ -46,7 +46,6 @@ class DatabaseManager:
                                   g TEXT NOT NULL,
                                   q TEXT NOT NULL, 
                                   y TEXT NOT NULL, 
-                                  seed_hash TEXT NOT NULL,
                                   compressed_credential TEXT NOT NULL,
                                   bits INTEGER DEFAULT 256,
                                   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP"""
@@ -135,7 +134,6 @@ class DatabaseManager:
                     'g': str(elgamal.g),
                     'q': str(elgamal.q),
                     'y': str(elgamal.y),
-                    'seed_hash': '',
                     'compressed_credential': '',
                     'bits': 512
                 }

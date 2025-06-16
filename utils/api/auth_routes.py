@@ -54,14 +54,13 @@ class AuthRoutes:
             """用户注册API - 第一步：获取群参数"""
             data = request.get_json()
             username = data.get('username')
-            seed_hash = data.get('seed_hash')
             
-            if not username or not seed_hash:
-                return jsonify({'error': 'Username and seed_hash are required'}), 400
+            if not username :
+                return jsonify({'error': 'Username are required'}), 400
             
             db = self._get_db_manager()
             auth_service = AuthService(db)
-            result = auth_service.register_user_step1(username, seed_hash)
+            result = auth_service.register_user_step1(username)
             
             if result['success']:
                 return jsonify(result)
@@ -91,7 +90,7 @@ class AuthRoutes:
         
         @self.app.route('/api/login_challenge', methods=['POST'])
         def login_challenge():
-            """零知识登录 - 第一步：获取登录挑战"""
+            """登录 - 第一步：获取pgy"""
             data = request.get_json()
             username = data.get('username')
             
@@ -110,7 +109,7 @@ class AuthRoutes:
         
         @self.app.route('/api/login_verify', methods=['POST'])
         def login_verify():
-            """零知识登录 - 第二步：验证零知识证明"""
+            """登录 - 第二步：验证零知识证明"""
             data = request.get_json()
             username = data.get('username')
             
