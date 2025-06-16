@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>零知识证明登录系统</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+            width: 100%;
+            max-width: 900px;
+            min-height: 600px;
+            display: flex;
+        }
+        
+        .left-panel {
+            flex: 1;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            padding: 40px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+        }
+        
+        .left-panel h1 {
+            font-size: 2.5em;
+            margin-bottom: 20px;
+            font-weight: 300;
+        }
+        
+        .left-panel p {
+            font-size: 1.1em;
+            opacity: 0.9;
+            line-height: 1.6;
+        }
+        
+        .right-panel {
+            flex: 1;
+            padding: 40px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        
+        .tabs {
+            display: flex;
+            margin-bottom: 30px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .tab {
+            flex: 1;
+            padding: 15px 20px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+            color: #666;
+            border-bottom: 2px solid transparent;
+            transition: all 0.3s ease;
+        }
+        
+        .tab.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+            font-weight: 600;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 500;
+        }
+        
+        input[type="text"], input[type="password"], textarea {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e1e5e9;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s ease;
+            background: #f8f9fa;
+        }
+        
+        input[type="text"]:focus, input[type="password"]:focus, textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            background: white;
+        }
+        
+        textarea {
+            resize: vertical;
+            min-height: 100px;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        
+        .btn {
+            width: 100%;
+            padding: 14px 20px;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+            margin-bottom: 10px;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+        
+        .btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .btn-secondary {
+            background: #6c757d;
+            margin-bottom: 10px;
+        }
+        
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 12px;
+            word-break: break-all;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        
+        .loading {
+            color: #667eea;
+            font-style: italic;
+        }
+        
+        .token-display {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 10px;
+            margin-top: 10px;
+            font-family: monospace;
+            font-size: 11px;
+            word-break: break-all;
+            max-height: 150px;
+            overflow-y: auto;
+        }
+        
+        .copy-btn {
+            width: auto;
+            padding: 5px 10px;
+            font-size: 12px;
+            margin-top: 5px;
+            margin-left: 0;
+        }
+        
+        .quick-login {
+            background: #e9ecef;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        
+        .quick-login h4 {
+            margin-bottom: 10px;
+            color: #495057;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                flex-direction: column;
+                max-width: 500px;
+            }
+            
+            .left-panel {
+                padding: 30px 20px;
+            }
+            
+            .left-panel h1 {
+                font-size: 2em;
+            }
+            
+            .right-panel {
+                padding: 30px 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="left-panel">
+            <h1>🔐 零知识登录</h1>
+            <p>基于ElGamal加密和零知识证明的安全认证系统。无需传输密码，通过数学证明验证身份。</p>
+            <br>
+            <p>✨ 注册后将获得压缩登录令牌<br>
+            🚀 仅需用户名+令牌即可快速登录<br>
+            🛡️ 私钥永不离开本地设备</p>
+        </div>
+        
+        <div class="right-panel">
+            <div class="tabs">
+                <button class="tab active" onclick="switchTab('register')">注册</button>
+                <button class="tab" onclick="switchTab('login')">登录</button>
+                <button class="tab" onclick="switchTab('quickLogin')">快速登录</button>
+            </div>
+            
+            <!-- 注册标签页 -->
+            <div id="register" class="tab-content active">
+                <div class="form-group">
+                    <label for="regUsername">用户名</label>
+                    <input type="text" id="regUsername" placeholder="输入用户名">
+                </div>
+                
+                <div class="form-group">
+                    <label for="regSeed">密码种子</label>
+                    <input type="password" id="regSeed" placeholder="输入密码种子（或自动生成）">
+                </div>
+                
+                <button class="btn btn-secondary" onclick="generateSeed()">生成随机种子</button>
+                <button class="btn" onclick="register()">注册账户</button>
+                
+                <div id="registerResult"></div>
+            </div>
+            
+            <!-- 普通登录标签页 -->
+            <div id="login" class="tab-content">
+                <div class="form-group">
+                    <label for="loginUsername">用户名</label>
+                    <input type="text" id="loginUsername" placeholder="输入用户名">
+                </div>
+                
+                <div class="form-group">
+                    <label for="loginSeed">密码种子</label>
+                    <input type="password" id="loginSeed" placeholder="输入密码种子">
+                </div>
+                
+                <button class="btn" onclick="login()">零知识登录</button>
+                
+                <div id="loginResult"></div>
+            </div>
+            
+            <!-- 快速登录标签页 -->
+            <div id="quickLogin" class="tab-content">
+                <div class="quick-login">
+                    <h4>快速登录说明</h4>
+                    <p>使用注册时获得的登录令牌，无需输入密码种子即可登录。</p>
+                </div>
+                
+                <div class="form-group">
+                    <label for="quickUsername">用户名</label>
+                    <input type="text" id="quickUsername" placeholder="输入用户名">
+                </div>
+                
+                <div class="form-group">
+                    <label for="loginToken">登录令牌</label>
+                    <textarea id="loginToken" placeholder="粘贴您的登录令牌"></textarea>
+                </div>
+                
+                <button class="btn" onclick="quickLogin()">快速登录</button>
+                
+                <div id="quickLoginResult"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/secureElgamal.js') }}"></script>
+    <script>
+        let secureElgamal = new SecureElGamal(256);
+        
+        // 切换标签页
+        function switchTab(tabName) {
+            // 隐藏所有标签内容
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            
+            // 取消所有标签按钮的激活状态
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // 显示选中的标签内容
+            document.getElementById(tabName).classList.add('active');
+            
+            // 激活选中的标签按钮
+            event.target.classList.add('active');
+        }
+        
+        // 生成随机种子
+        function generateSeed() {
+            const seed = secureElgamal.generateSeed();
+            document.getElementById('regSeed').value = seed;
+        }
+        
+        // 用户注册
+        async function register() {
+            const username = document.getElementById('regUsername').value.trim();
+            const seed = document.getElementById('regSeed').value.trim();
+            const resultDiv = document.getElementById('registerResult');
+            
+            if (!username || !seed) {
+                resultDiv.innerHTML = '<div class="error">请填写用户名和密码种子</div>';
+                return;
+            }
+            
+            resultDiv.innerHTML = '<div class="loading">正在注册账户，请稍等...</div>';
+            
+            try {
+                const result = await secureElgamal.register(username, seed);
+                
+                resultDiv.innerHTML = `
+                    <div class="success">✅ 注册成功！</div>
+                    <div class="info">
+                        <strong>重要：请保存以下信息</strong><br><br>
+                        <strong>用户名:</strong> ${username}<br>
+                        <strong>密码种子:</strong> ${seed}<br><br>
+                        <strong>登录令牌:</strong><br>
+                        <div class="token-display">${result.login_token}</div>
+                        <button class="btn copy-btn" onclick="copyToClipboard('${result.login_token}')">复制令牌</button>
+                        <br><br>
+                        💡 <strong>提示:</strong> 使用登录令牌可以快速登录，无需输入密码种子
+                    </div>
+                `;
+                
+                // 自动填充到快速登录表单
+                document.getElementById('quickUsername').value = username;
+                document.getElementById('loginToken').value = result.login_token;
+                
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">❌ 注册失败: ${error.message}</div>`;
+            }
+        }
+        
+        // 普通登录
+        async function login() {
+            const username = document.getElementById('loginUsername').value.trim();
+            const seed = document.getElementById('loginSeed').value.trim();
+            const resultDiv = document.getElementById('loginResult');
+            
+            if (!username || !seed) {
+                resultDiv.innerHTML = '<div class="error">请填写用户名和密码种子</div>';
+                return;
+            }
+            
+            resultDiv.innerHTML = '<div class="loading">正在进行零知识证明登录...</div>';
+            
+            try {
+                const result = await secureElgamal.zkLogin(username, seed);
+                
+                resultDiv.innerHTML = `
+                    <div class="success">✅ ${result.message}</div>
+                    <div class="info">
+                        <strong>用户信息:</strong><br>
+                        用户名: ${result.user_info.username}<br><br>
+                        <strong>您的登录令牌:</strong><br>
+                        <div class="token-display">${result.user_info.login_token}</div>
+                        <button class="btn copy-btn" onclick="copyToClipboard('${result.user_info.login_token}')">复制令牌</button>
+                    </div>
+                `;
+                
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">❌ ${error.message}</div>`;
+            }
+        }
+        
+        // 快速登录
+        async function quickLogin() {
+            const username = document.getElementById('quickUsername').value.trim();
+            const loginToken = document.getElementById('loginToken').value.trim();
+            const resultDiv = document.getElementById('quickLoginResult');
+            
+            if (!username || !loginToken) {
+                resultDiv.innerHTML = '<div class="error">请填写用户名和登录令牌</div>';
+                return;
+            }
+            
+            resultDiv.innerHTML = '<div class="loading">正在快速登录...</div>';
+            
+            try {
+                // 使用登录令牌进行零知识登录（不需要种子）
+                const result = await secureElgamal.zkLogin(username, null, loginToken);
+                
+                resultDiv.innerHTML = `
+                    <div class="success">✅ ${result.message}</div>
+                    <div class="info">
+                        <strong>欢迎回来!</strong><br>
+                        用户名: ${result.user_info.username}<br>
+                        登录方式: 快速登录（令牌验证）
+                    </div>
+                `;
+                
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">❌ ${error.message}</div>`;
+            }
+        }
+        
+        // 复制到剪贴板
+        async function copyToClipboard(text) {
+            try {
+                await navigator.clipboard.writeText(text);
+                alert('已复制到剪贴板！');
+            } catch (err) {
+                // 回退方法
+                const textArea = document.createElement('textarea');
+                textArea.value = text;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                alert('已复制到剪贴板！');
+            }
+        }
+        
+        // 页面加载时的初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('零知识证明登录系统已加载');
+        });
+    </script>
+</body>
+</html>

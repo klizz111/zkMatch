@@ -4,7 +4,7 @@ from Crypto.Util import number
 from Crypto.Random import random as crypto_random
 
 class ElGamal:
-    def __init__(self, bits):
+    def __init__(self, bits = 256):
         self.bits = bits
         self.is_cleaned = False
         self.p = None
@@ -124,7 +124,7 @@ class ElGamal:
 # 使用示例
 if __name__ == "__main__":
     # 创建 ElGamal 实例
-    elgamal = ElGamal(512)  # 512 位
+    elgamal = ElGamal(256)  # 512 位
     
     # 生成密钥
     elgamal.keygen()
