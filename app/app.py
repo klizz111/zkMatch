@@ -1,4 +1,5 @@
 from flask import Flask, render_template, g, request, jsonify
+from functools import wraps
 
 import sys
 import os
@@ -8,7 +9,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from utils.database.dataBase import DatabaseManager
 from utils.mathlib.elgamal import ElGamal
 from utils.zk.dlogProof import dlogProof, dlogProofVerify
-from utils.zk.crypto import compress_credential, generate_login_token, parse_login_token
+from utils.zk.crypto_utils import compress_credential
 import hashlib
 import random
 import logging
@@ -17,11 +18,11 @@ app = Flask(__name__)
 app.config['DATABASE_PATH'] = 'datastorage.db'
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
-# 在应用启动时进行一次性初始化
+# 在应用启动时进行初始化
 _db_initialized = False
 
 def init_database():
-    """一次性初始化数据库"""
+    """初始化数据库"""
     global _db_initialized
     if not _db_initialized:
         db_path = app.config['DATABASE_PATH']
@@ -48,6 +49,33 @@ def close_db(error):
     db = g.pop('db', None)
     if db is not None:
         db.disconnect()
+
+def require_session(f):
+    """装饰器：要求有效的session"""
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        # 从请求头获取session ID
+        session_id = request.headers.get('Authorization')
+        if session_id and session_id.startswith('Bearer '):
+            session_id = session_id[7:]  # 移除 'Bearer ' 前缀
+        else:
+            # 也可以从请求参数获取
+            session_id = request.args.get('session_id') or request.json.get('session_id') if request.json else None
+        
+        if not session_id:
+            return jsonify({'error': 'Session ID required'}), 401
+        
+        db = get_db()
+        username = db.validate_session(session_id)
+        
+        if not username:
+            return jsonify({'error': 'Invalid or expired session'}), 401
+        
+        # 将用户名添加到g对象中，方便路由函数使用
+        g.current_user = username
+        return f(*args, **kwargs)
+    
+    return decorated_function
         
 @app.teardown_appcontext
 def close_db_on_teardown(error):
@@ -67,12 +95,11 @@ def about():
 
 @app.route('/api/register', methods=['POST'])
 def register():
-    """用户注册API - 第一步：生成公钥参数"""
+    """用户注册API - 获取root用户的群参数"""
     try:
         data = request.get_json()
         username = data.get('username')
         seed_hash = data.get('seed_hash')
-        bits = data.get('bits', 256)
         
         if not username or not seed_hash:
             return jsonify({'error': 'Username and seed_hash are required'}), 400
@@ -84,31 +111,35 @@ def register():
         if existing_user:
             return jsonify({'error': 'Username already exists'}), 409
         
-        # 生成ElGamal参数
-        elgamal = ElGamal(bits)
-        elgamal.keygen()
+        # 从root用户获取群参数
+        root_record = db.select('account_data', 'username = ?', ('root',))
+        if not root_record:
+            return jsonify({'error': 'System not initialized - root user not found'}), 500
         
-        p, g, y = elgamal.get_pkg()
+        root_data = root_record[0]
+        p = root_data['p']
+        g = root_data['g']
+        q = root_data['q']
         
-        # 暂时保存到数据库（没有完整的公钥y，等客户端计算后更新）
+        # 创建用户记录（y将由客户端计算并在第二步发送）
         account_data = {
             'username': username,
-            'p': str(p),
-            'g': str(g),
-            'q': str(elgamal.q),
+            'p': p,
+            'g': g,
+            'q': q,
             'y': '',  # 暂时为空，等待客户端计算
             'seed_hash': seed_hash,
             'compressed_credential': '',  # 暂时为空
-            'bits': bits
+            'bits': 512  # 固定为512位
         }
         
         db.insert('account_data', account_data)
         
         return jsonify({
             'success': True,
-            'p': str(p),
-            'g': str(g),
-            'q': str(elgamal.q)
+            'p': p,
+            'g': g,
+            'q': q
         })
         
     except Exception as e:
@@ -132,17 +163,10 @@ def complete_registration():
         if not user_record:
             return jsonify({'error': 'User not found'}), 404
         
-        user_data = user_record[0]
-        p = user_data['p']
-        g = user_data['g']
-        
-        # 生成压缩凭证（不包含私钥x，因为服务器不知道）
-        login_token = generate_login_token(username, p, g, y)
-        
         # 更新数据库
         update_data = {
             'y': str(y),
-            'compressed_credential': login_token
+            'compressed_credential': ''  # 不再生成压缩凭证
         }
         
         db.update('account_data', update_data, 'username = ?', (username,))
@@ -163,7 +187,6 @@ def complete_registration():
         
         return jsonify({
             'success': True,
-            'login_token': login_token,
             'message': 'Registration completed successfully'
         })
         
@@ -176,44 +199,24 @@ def login_challenge():
     try:
         data = request.get_json()
         username = data.get('username')
-        login_token = data.get('login_token', '')
         
         if not username:
             return jsonify({'error': 'Username is required'}), 400
         
         db = get_db()
         
-        # 如果提供了登录令牌，使用令牌中的信息
-        if login_token:
-            try:
-                token_data = parse_login_token(login_token)
-                if token_data['username'] != username:
-                    return jsonify({'error': 'Username mismatch with token'}), 400
-                
-                p = int(token_data['p'])
-                g = int(token_data['g'])
-                y = int(token_data['y'])
-                
-            except ValueError as e:
-                return jsonify({'error': f'Invalid login token: {e}'}), 400
-        else:
-            # 从数据库获取用户信息
-            user_record = db.select('account_data', 'username = ?', (username,))
-            if not user_record:
-                return jsonify({'error': 'User not found'}), 404
-            
-            user_data = user_record[0]
-            p = int(user_data['p'])
-            g = int(user_data['g'])
-            y = int(user_data['y'])
+        # 从数据库获取用户信息
+        user_record = db.select('account_data', 'username = ?', (username,))
+        if not user_record:
+            return jsonify({'error': 'User not found'}), 404
         
-        # 生成随机挑战
-        challenge = random.randint(1, p-1)
+        user_data = user_record[0]
+        p = int(user_data['p'])
+        g = int(user_data['g'])
+        y = int(user_data['y'])
         
-        # 将挑战保存到session或临时存储（这里简化为返回给客户端）
         return jsonify({
             'success': True,
-            'challenge': str(challenge),
             'p': str(p),
             'g': str(g),
             'y': str(y)
@@ -251,12 +254,15 @@ def login_verify():
         is_valid = dlogProofVerify(y, g, p, proof)
         
         if is_valid:
+            # 登录成功，生成session ID
+            session_id = db.generate_session_id(username)
+            
             return jsonify({
                 'success': True,
                 'message': 'Login successful',
+                'session_id': session_id,
                 'user_info': {
-                    'username': username,
-                    'login_token': user_data['compressed_credential']
+                    'username': username
                 }
             })
         else:
@@ -266,11 +272,11 @@ def login_verify():
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/user_info', methods=['GET'])
+@require_session
 def get_user_info():
-    """获取用户信息"""
-    username = request.args.get('username')
-    if not username:
-        return jsonify({'error': 'Username is required'}), 400
+    """获取用户信息 - 需要有效的session"""
+    # 从装饰器获取当前用户名
+    username = g.current_user
     
     db = get_db()
     user_record = db.select('user_data', 'username = ?', (username,))
@@ -286,6 +292,95 @@ def get_user_info():
         'contact_info': user['contact_info'],
         'personal_info': user['personal_info']
     })
+
+@app.route('/api/update_profile', methods=['POST'])
+@require_session
+def update_profile():
+    """更新用户资料 - 需要有效的session"""
+    try:
+        data = request.get_json()
+        username = g.current_user
+        
+        # 允许更新的字段
+        allowed_fields = ['nickname', 'age', 'contact_info', 'personal_info']
+        update_data = {}
+        
+        for field in allowed_fields:
+            if field in data:
+                update_data[field] = data[field]
+        
+        if not update_data:
+            return jsonify({'error': 'No valid fields to update'}), 400
+        
+        db = get_db()
+        rows_affected = db.update('user_data', update_data, 'username = ?', (username,))
+        
+        if rows_affected > 0:
+            return jsonify({
+                'success': True,
+                'message': 'Profile updated successfully'
+            })
+        else:
+            return jsonify({'error': 'User not found'}), 404
+            
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/logout', methods=['POST'])
+@require_session
+def logout():
+    """用户登出 - 使session失效"""
+    try:
+        # 从请求头获取session ID
+        session_id = request.headers.get('Authorization')
+        if session_id and session_id.startswith('Bearer '):
+            session_id = session_id[7:]
+        else:
+            session_id = request.args.get('session_id') or request.json.get('session_id') if request.json else None
+        
+        if session_id:
+            db = get_db()
+            success = db.invalidate_session(session_id)
+            
+            if success:
+                return jsonify({
+                    'success': True,
+                    'message': 'Logged out successfully'
+                })
+            else:
+                return jsonify({'error': 'Failed to logout'}), 500
+        else:
+            return jsonify({'error': 'Session ID not found'}), 400
+            
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/validate_session', methods=['GET'])
+def validate_session():
+    """验证session是否有效"""
+    try:
+        session_id = request.headers.get('Authorization')
+        if session_id and session_id.startswith('Bearer '):
+            session_id = session_id[7:]
+        else:
+            session_id = request.args.get('session_id')
+        
+        if not session_id:
+            return jsonify({'valid': False, 'error': 'Session ID required'}), 400
+        
+        db = get_db()
+        username = db.validate_session(session_id)
+        
+        if username:
+            return jsonify({
+                'valid': True,
+                'username': username
+            })
+        else:
+            return jsonify({'valid': False})
+            
+    except Exception as e:
+        return jsonify({'valid': False, 'error': str(e)}), 500
 
 if __name__ == '__main__':
     # 应用启动时初始化数据库

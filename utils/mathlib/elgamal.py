@@ -124,7 +124,7 @@ class ElGamal:
 # 使用示例
 if __name__ == "__main__":
     # 创建 ElGamal 实例
-    elgamal = ElGamal(256)  # 512 位
+    elgamal = ElGamal(512)  # 512 位
     
     # 生成密钥
     elgamal.keygen()

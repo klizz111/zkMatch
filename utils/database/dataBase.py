@@ -1,6 +1,9 @@
 import sqlite3
 from typing import List, Tuple, Any, Optional
 import logging
+import secrets
+import datetime
+from ..mathlib.elgamal import ElGamal
 
 class DatabaseManager:
     def __init__(self, db_path: str):
@@ -34,13 +37,37 @@ class DatabaseManager:
                                   bits INTEGER DEFAULT 256,
                                   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP"""
                 )
+                self.create_table("session_ID",
+                                """id INTEGER PRIMARY KEY AUTOINCREMENT,
+                                session_id TEXT NOT NULL UNIQUE,
+                                username TEXT NOT NULL,
+                                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                                expires_at TIMESTAMP NOT NULL,
+                                is_active INTEGER DEFAULT 1,
+                                FOREIGN KEY (username) REFERENCES user_data(username)"""
+                )
+                
+                # account_data中添加root用户，将root的p,g,q,y设置为系统全局的群参数
+                elgamal = ElGamal(bits=512)
+                elgamal.keygen()
+                root_data = {
+                    'username': 'root',
+                    'p': str(elgamal.p),
+                    'g': str(elgamal.g),
+                    'q': str(elgamal.q),
+                    'y': str(elgamal.y),
+                    'seed_hash': '',
+                    'compressed_credential': '',
+                    'bits': 512
+                }
+                self.insert("account_data", root_data)
                 
                 self.isInitialized = True
                 self.disconnect()
             except sqlite3.Error as e:
                 logging.error(f"Database initialization error: {e}")
                 raise
-                                  
+    
     def connect(self):
         """连接到SQLite数据库"""
         try:
@@ -195,6 +222,137 @@ class DatabaseManager:
             print(f"执行SQL失败: {e}")
             raise
     
+    def generate_session_id(self, username: str) -> str:
+        """
+        为用户生成新的session ID，有效期24小时
+        
+        Args:
+            username: 用户名
+            
+        Returns:
+            生成的session ID
+        """
+        try:
+            # 生成32字节的随机session ID
+            session_id = secrets.token_urlsafe(32)
+            
+            # 计算过期时间（24小时后）
+            expires_at = datetime.datetime.now() + datetime.timedelta(hours=24)
+            
+            # 首先使旧的session失效
+            self.invalidate_user_sessions(username)
+            
+            # 插入新的session记录
+            session_data = {
+                'session_id': session_id,
+                'username': username,
+                'expires_at': expires_at.isoformat(),
+                'is_active': 1
+            }
+            
+            self.insert('session_ID', session_data)
+            
+            return session_id
+            
+        except sqlite3.Error as e:
+            logging.error(f"Generate session ID error: {e}")
+            raise
+    
+    def validate_session(self, session_id: str) -> Optional[str]:
+        """
+        验证session ID是否有效
+        
+        Args:
+            session_id: 要验证的session ID
+            
+        Returns:
+            如果有效返回用户名，否则返回None
+        """
+        try:
+            # 查询session记录
+            sessions = self.select('session_ID', 
+                                 'session_id = ? AND is_active = 1', 
+                                 (session_id,))
+            
+            if not sessions:
+                return None
+            
+            session = sessions[0]
+            expires_at = datetime.datetime.fromisoformat(session['expires_at'])
+            
+            # 检查是否过期
+            if datetime.datetime.now() > expires_at:
+                # 如果过期，设置为无效
+                self.update('session_ID', 
+                           {'is_active': 0}, 
+                           'session_id = ?', 
+                           (session_id,))
+                return None
+            
+            return session['username']
+            
+        except sqlite3.Error as e:
+            logging.error(f"Validate session error: {e}")
+            return None
+    
+    def invalidate_session(self, session_id: str) -> bool:
+        """
+        使特定的session ID失效
+        
+        Args:
+            session_id: 要失效的session ID
+            
+        Returns:
+            操作是否成功
+        """
+        try:
+            rows_affected = self.update('session_ID',
+                                      {'is_active': 0},
+                                      'session_id = ?',
+                                      (session_id,))
+            return rows_affected > 0
+        except sqlite3.Error as e:
+            logging.error(f"Invalidate session error: {e}")
+            return False
+    
+    def invalidate_user_sessions(self, username: str) -> int:
+        """
+        使用户的所有session失效
+        
+        Args:
+            username: 用户名
+            
+        Returns:
+            失效的session数量
+        """
+        try:
+            rows_affected = self.update('session_ID',
+                                      {'is_active': 0},
+                                      'username = ? AND is_active = 1',
+                                      (username,))
+            return rows_affected
+        except sqlite3.Error as e:
+            logging.error(f"Invalidate user sessions error: {e}")
+            return 0
+    
+    def cleanup_expired_sessions(self) -> int:
+        """
+        清理过期的session记录
+        
+        Returns:
+            清理的session数量
+        """
+        try:
+            current_time = datetime.datetime.now().isoformat()
+            rows_affected = self.update('session_ID',
+                                      {'is_active': 0},
+                                      'expires_at < ? AND is_active = 1',
+                                      (current_time,))
+            return rows_affected
+        except sqlite3.Error as e:
+            logging.error(f"Cleanup expired sessions error: {e}")
+            return 0
+    
     def __enter__(self):
         """上下文管理器入口"""
         self.connect()
@@ -212,35 +370,7 @@ def example_usage():
     
     # 使用上下文管理器自动处理连接
     with DatabaseManager(db_path) as db:
-        # 创建用户表
-        db.create_table("users", "id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, email TEXT UNIQUE, age INTEGER")
+        db.initialize()
         
-        # 插入数据
-        user_data = {
-            "name": "张三",
-            "email": "zhangsan@example.com",
-            "age": 25
-        }
-        user_id = db.insert("users", user_data)
-        print(f"插入用户ID: {user_id}")
-        
-        # 查询所有用户
-        users = db.select("users")
-        print("所有用户:")
-        for user in users:
-            print(f"ID: {user['id']}, 姓名: {user['name']}, 邮箱: {user['email']}, 年龄: {user['age']}")
-        
-        # 根据条件查询
-        young_users = db.select("users", "age < ?", (30,))
-        print(f"年龄小于30的用户数量: {len(young_users)}")
-        
-        # 更新数据
-        updated_rows = db.update("users", {"age": 26}, "name = ?", ("张三",))
-        print(f"更新了 {updated_rows} 行数据")
-        
-        # 删除数据
-        # deleted_rows = db.delete("users", "id = ?", (user_id,))
-        # print(f"删除了 {deleted_rows} 行数据")
-
 if __name__ == "__main__":
     example_usage()

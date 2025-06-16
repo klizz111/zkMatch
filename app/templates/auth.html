@@ -115,19 +115,32 @@
             font-size: 14px;
             transition: border-color 0.3s ease;
             background: #f8f9fa;
+            font-family: 'Courier New', monospace;
+            word-break: break-all;
+            overflow-wrap: break-word;
         }
         
-        input[type="text"]:focus, input[type="password"]:focus, textarea:focus {
-            outline: none;
-            border-color: #667eea;
-            background: white;
-        }
-        
-        textarea {
+        .seed-input {
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            letter-spacing: 0.5px;
+            line-height: 1.4;
+            height: auto;
+            min-height: 45px;
             resize: vertical;
-            min-height: 100px;
-            font-family: monospace;
+        }
+        
+        .seed-display {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 8px 12px;
+            margin-top: 5px;
+            font-family: 'Courier New', monospace;
             font-size: 12px;
+            word-break: break-all;
+            color: #495057;
+            line-height: 1.3;
         }
         
         .btn {
@@ -226,6 +239,101 @@
             color: #495057;
         }
         
+        .user-header {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 4px solid #667eea;
+        }
+        
+        .user-header h2 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+        
+        .user-header p {
+            margin: 5px 0;
+            font-size: 14px;
+        }
+        
+        .session-id {
+            font-family: monospace;
+            background: #e9ecef;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 12px;
+        }
+        
+        .user-actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .user-actions .btn {
+            margin-bottom: 0;
+            padding: 12px 16px;
+            font-size: 14px;
+        }
+        
+        .btn-danger {
+            background: linear-gradient(45deg, #dc3545, #c82333);
+        }
+        
+        .btn-danger:hover {
+            background: linear-gradient(45deg, #c82333, #bd2130);
+        }
+        
+        .form-section {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        
+        .form-section h4 {
+            margin-bottom: 15px;
+            color: #333;
+        }
+        
+        .form-section .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .form-section input,
+        .form-section textarea {
+            background: white;
+        }
+        
+        .session-info {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            border: 1px solid #bbdefb;
+        }
+        
+        .session-info h4 {
+            color: #1976d2;
+            margin-bottom: 10px;
+        }
+        
+        .session-info p {
+            margin: 5px 0;
+            font-size: 13px;
+            color: #555;
+        }
+        
+        #userContent {
+            margin-bottom: 20px;
+        }
+        
+        input[type="number"] {
+            font-family: inherit;
+        }
+        
         @media (max-width: 768px) {
             .container {
                 flex-direction: column;
@@ -243,6 +351,18 @@
             .right-panel {
                 padding: 30px 20px;
             }
+            
+            .user-actions {
+                grid-template-columns: 1fr;
+            }
+            
+            .user-header {
+                padding: 15px;
+            }
+            
+            .form-section {
+                padding: 15px;
+            }
         }
     </style>
 </head>
@@ -252,16 +372,16 @@
             <h1>🔐 零知识登录</h1>
             <p>基于ElGamal加密和零知识证明的安全认证系统。无需传输密码，通过数学证明验证身份。</p>
             <br>
-            <p>✨ 注册后将获得压缩登录令牌<br>
-            🚀 仅需用户名+令牌即可快速登录<br>
-            🛡️ 私钥永不离开本地设备</p>
+            <p>✨ 安全的用户注册系统<br>
+            🚀 仅需用户名+密码种子登录<br>
+            🛡️ 私钥永不离开本地设备<br>
+            🔑 统一使用512位安全密钥</p>
         </div>
         
         <div class="right-panel">
             <div class="tabs">
                 <button class="tab active" onclick="switchTab('register')">注册</button>
                 <button class="tab" onclick="switchTab('login')">登录</button>
-                <button class="tab" onclick="switchTab('quickLogin')">快速登录</button>
             </div>
             
             <!-- 注册标签页 -->
@@ -273,7 +393,7 @@
                 
                 <div class="form-group">
                     <label for="regSeed">密码种子</label>
-                    <input type="password" id="regSeed" placeholder="输入密码种子（或自动生成）">
+                    <input type="password" id="regSeed" placeholder="输入密码种子（或自动生成）" class="seed-input">
                 </div>
                 
                 <button class="btn btn-secondary" onclick="generateSeed()">生成随机种子</button>
@@ -291,34 +411,12 @@
                 
                 <div class="form-group">
                     <label for="loginSeed">密码种子</label>
-                    <input type="password" id="loginSeed" placeholder="输入密码种子">
+                    <input type="password" id="loginSeed" placeholder="输入密码种子" class="seed-input">
                 </div>
                 
                 <button class="btn" onclick="login()">零知识登录</button>
                 
                 <div id="loginResult"></div>
-            </div>
-            
-            <!-- 快速登录标签页 -->
-            <div id="quickLogin" class="tab-content">
-                <div class="quick-login">
-                    <h4>快速登录说明</h4>
-                    <p>使用注册时获得的登录令牌，无需输入密码种子即可登录。</p>
-                </div>
-                
-                <div class="form-group">
-                    <label for="quickUsername">用户名</label>
-                    <input type="text" id="quickUsername" placeholder="输入用户名">
-                </div>
-                
-                <div class="form-group">
-                    <label for="loginToken">登录令牌</label>
-                    <textarea id="loginToken" placeholder="粘贴您的登录令牌"></textarea>
-                </div>
-                
-                <button class="btn" onclick="quickLogin()">快速登录</button>
-                
-                <div id="quickLoginResult"></div>
             </div>
         </div>
     </div>
@@ -348,8 +446,25 @@
         
         // 生成随机种子
         function generateSeed() {
-            const seed = secureElgamal.generateSeed();
+            const seed = secureElgamal.generateReadableSeed();
             document.getElementById('regSeed').value = seed;
+            
+            // 显示种子信息
+            const seedInfo = document.createElement('div');
+            seedInfo.className = 'seed-display';
+            seedInfo.innerHTML = `
+                <strong>生成的安全种子:</strong><br>
+                ${seed}<br>`;
+            
+            // 移除之前的种子信息显示
+            const existingSeedInfo = document.querySelector('.seed-display');
+            if (existingSeedInfo) {
+                existingSeedInfo.remove();
+            }
+            
+            // 在按钮后添加种子信息
+            const generateBtn = event.target;
+            generateBtn.parentNode.insertBefore(seedInfo, generateBtn.nextSibling);
         }
         
         // 用户注册
@@ -374,24 +489,172 @@
                         <strong>重要：请保存以下信息</strong><br><br>
                         <strong>用户名:</strong> ${username}<br>
                         <strong>密码种子:</strong> ${seed}<br><br>
-                        <strong>登录令牌:</strong><br>
-                        <div class="token-display">${result.login_token}</div>
-                        <button class="btn copy-btn" onclick="copyToClipboard('${result.login_token}')">复制令牌</button>
-                        <br><br>
-                        💡 <strong>提示:</strong> 使用登录令牌可以快速登录，无需输入密码种子
+                        💡 <strong>提示:</strong> 请牢记您的用户名和密码种子，这是您登录的唯一凭证
                     </div>
                 `;
-                
-                // 自动填充到快速登录表单
-                document.getElementById('quickUsername').value = username;
-                document.getElementById('loginToken').value = result.login_token;
                 
             } catch (error) {
                 resultDiv.innerHTML = `<div class="error">❌ 注册失败: ${error.message}</div>`;
             }
         }
         
-        // 普通登录
+        // 登录成功后显示用户信息
+        async function showUserDashboard(result) {
+            const container = document.querySelector('.container');
+            container.innerHTML = `
+                <div class="left-panel">
+                    <h1>🎉 登录成功</h1>
+                    <p>欢迎使用零知识证明登录系统！</p>
+                    <br>
+                    <p>✅ Session已建立<br>
+                    🔒 24小时有效期<br>
+                    🚀 可进行后续操作<br>
+                    🛡️ 安全认证完成</p>
+                </div>
+                
+                <div class="right-panel">
+                    <div class="user-header">
+                        <h2>用户控制面板</h2>
+                        <p>当前用户: <strong>${result.user_info.username}</strong></p>
+                        <p>Session ID: <span class="session-id">${result.session_id.substring(0, 16)}...</span></p>
+                    </div>
+                    
+                    <div class="user-actions">
+                        <button class="btn" onclick="loadUserInfo()">获取用户信息</button>
+                        <button class="btn" onclick="showUpdateProfile()">更新资料</button>
+                        <button class="btn btn-secondary" onclick="validateCurrentSession()">验证Session</button>
+                        <button class="btn btn-danger" onclick="logoutUser()">登出</button>
+                    </div>
+                    
+                    <div id="userContent"></div>
+                    
+                    <div class="session-info">
+                        <h4>Session信息</h4>
+                        <p><strong>Session ID:</strong> ${result.session_id}</p>
+                        <p><strong>创建时间:</strong> ${new Date().toLocaleString()}</p>
+                        <p><strong>有效期:</strong> 24小时</p>
+                        <button class="btn copy-btn" onclick="copyToClipboard('${result.session_id}')">复制Session ID</button>
+                    </div>
+                </div>
+            `;
+        }
+        
+        // 加载用户信息
+        async function loadUserInfo() {
+            const contentDiv = document.getElementById('userContent');
+            contentDiv.innerHTML = '<div class="loading">正在获取用户信息...</div>';
+            
+            try {
+                const userInfo = await secureElgamal.getUserInfo();
+                contentDiv.innerHTML = `
+                    <div class="success">
+                        <h4>用户信息</h4>
+                        <p><strong>用户名:</strong> ${userInfo.username}</p>
+                        <p><strong>昵称:</strong> ${userInfo.nickname || '未设置'}</p>
+                        <p><strong>年龄:</strong> ${userInfo.age || '未设置'}</p>
+                        <p><strong>联系方式:</strong> ${userInfo.contact_info || '未设置'}</p>
+                        <p><strong>个人信息:</strong> ${userInfo.personal_info || '未设置'}</p>
+                    </div>
+                `;
+            } catch (error) {
+                contentDiv.innerHTML = `<div class="error">❌ ${error.message}</div>`;
+            }
+        }
+        
+        // 显示更新资料表单
+        function showUpdateProfile() {
+            const contentDiv = document.getElementById('userContent');
+            contentDiv.innerHTML = `
+                <div class="form-section">
+                    <h4>更新用户资料</h4>
+                    <div class="form-group">
+                        <label for="updateNickname">昵称</label>
+                        <input type="text" id="updateNickname" placeholder="输入昵称">
+                    </div>
+                    <div class="form-group">
+                        <label for="updateAge">年龄</label>
+                        <input type="number" id="updateAge" placeholder="输入年龄">
+                    </div>
+                    <div class="form-group">
+                        <label for="updateContact">联系方式</label>
+                        <input type="text" id="updateContact" placeholder="输入联系方式">
+                    </div>
+                    <div class="form-group">
+                        <label for="updatePersonal">个人信息</label>
+                        <textarea id="updatePersonal" placeholder="输入个人信息"></textarea>
+                    </div>
+                    <button class="btn" onclick="updateUserProfile()">保存更新</button>
+                </div>
+            `;
+        }
+        
+        // 更新用户资料
+        async function updateUserProfile() {
+            const profileData = {
+                nickname: document.getElementById('updateNickname').value.trim(),
+                age: parseInt(document.getElementById('updateAge').value) || null,
+                contact_info: document.getElementById('updateContact').value.trim(),
+                personal_info: document.getElementById('updatePersonal').value.trim()
+            };
+            
+            // 移除空值
+            Object.keys(profileData).forEach(key => {
+                if (profileData[key] === '' || profileData[key] === null) {
+                    delete profileData[key];
+                }
+            });
+            
+            if (Object.keys(profileData).length === 0) {
+                document.getElementById('userContent').innerHTML += '<div class="error">请至少填写一个字段</div>';
+                return;
+            }
+            
+            try {
+                const result = await secureElgamal.updateProfile(profileData);
+                document.getElementById('userContent').innerHTML = `
+                    <div class="success">✅ ${result.message}</div>
+                `;
+                // 自动刷新用户信息
+                setTimeout(() => loadUserInfo(), 1000);
+            } catch (error) {
+                document.getElementById('userContent').innerHTML += `<div class="error">❌ ${error.message}</div>`;
+            }
+        }
+        
+        // 验证当前session
+        async function validateCurrentSession() {
+            const contentDiv = document.getElementById('userContent');
+            contentDiv.innerHTML = '<div class="loading">正在验证Session...</div>';
+            
+            try {
+                const isValid = await secureElgamal.validateSession();
+                if (isValid) {
+                    contentDiv.innerHTML = '<div class="success">✅ Session有效，认证状态正常</div>';
+                } else {
+                    contentDiv.innerHTML = '<div class="error">❌ Session已失效，请重新登录</div>';
+                    setTimeout(() => location.reload(), 2000);
+                }
+            } catch (error) {
+                contentDiv.innerHTML = `<div class="error">❌ 验证失败: ${error.message}</div>`;
+            }
+        }
+        
+        // 用户登出
+        async function logoutUser() {
+            if (!confirm('确定要登出吗？')) return;
+            
+            try {
+                await secureElgamal.logout();
+                alert('登出成功！');
+                location.reload();
+            } catch (error) {
+                alert(`登出失败: ${error.message}`);
+                // 即使失败也重新加载页面，因为本地session已清除
+                location.reload();
+            }
+        }
+        
+        // 修改登录函数以显示用户控制面板
         async function login() {
             const username = document.getElementById('loginUsername').value.trim();
             const seed = document.getElementById('loginSeed').value.trim();
@@ -407,47 +670,8 @@
             try {
                 const result = await secureElgamal.zkLogin(username, seed);
                 
-                resultDiv.innerHTML = `
-                    <div class="success">✅ ${result.message}</div>
-                    <div class="info">
-                        <strong>用户信息:</strong><br>
-                        用户名: ${result.user_info.username}<br><br>
-                        <strong>您的登录令牌:</strong><br>
-                        <div class="token-display">${result.user_info.login_token}</div>
-                        <button class="btn copy-btn" onclick="copyToClipboard('${result.user_info.login_token}')">复制令牌</button>
-                    </div>
-                `;
-                
-            } catch (error) {
-                resultDiv.innerHTML = `<div class="error">❌ ${error.message}</div>`;
-            }
-        }
-        
-        // 快速登录
-        async function quickLogin() {
-            const username = document.getElementById('quickUsername').value.trim();
-            const loginToken = document.getElementById('loginToken').value.trim();
-            const resultDiv = document.getElementById('quickLoginResult');
-            
-            if (!username || !loginToken) {
-                resultDiv.innerHTML = '<div class="error">请填写用户名和登录令牌</div>';
-                return;
-            }
-            
-            resultDiv.innerHTML = '<div class="loading">正在快速登录...</div>';
-            
-            try {
-                // 使用登录令牌进行零知识登录（不需要种子）
-                const result = await secureElgamal.zkLogin(username, null, loginToken);
-                
-                resultDiv.innerHTML = `
-                    <div class="success">✅ ${result.message}</div>
-                    <div class="info">
-                        <strong>欢迎回来!</strong><br>
-                        用户名: ${result.user_info.username}<br>
-                        登录方式: 快速登录（令牌验证）
-                    </div>
-                `;
+                // 显示用户控制面板
+                showUserDashboard(result);
                 
             } catch (error) {
                 resultDiv.innerHTML = `<div class="error">❌ ${error.message}</div>`;
@@ -472,8 +696,26 @@
         }
         
         // 页面加载时的初始化
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', async function() {
             console.log('零知识证明登录系统已加载');
+            
+            // 检查是否有当前session
+            const currentSession = secureElgamal.getCurrentSession();
+            if (currentSession.sessionId && currentSession.username) {
+                // 验证session是否仍然有效
+                const isValid = await secureElgamal.validateSession(currentSession.sessionId);
+                if (isValid) {
+                    // 如果session有效，直接显示用户控制面板
+                    showUserDashboard({
+                        session_id: currentSession.sessionId,
+                        user_info: { username: currentSession.username },
+                        message: '自动登录成功'
+                    });
+                } else {
+                    // 如果session无效，清除本地存储
+                    secureElgamal.clearSessionFromLocal();
+                }
+            }
         });
     </script>
 </body>

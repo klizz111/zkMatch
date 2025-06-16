@@ -17,7 +17,7 @@ def dlogProof(x, g, p):
     # Step 4: Compute z = r + cx (mod p-1) 
     z = (r + c*x) % (p-1)
     
-    # Step 5: Return the residue y and the proof pf = (c, z)
+    # Step 5: Return the y and the proof pf = (c, z)
     return y, (c, z)
 
 def dlogProofVerify(y, g, p, pf):
