@@ -670,8 +670,12 @@
             try {
                 const result = await secureElgamal.zkLogin(username, seed);
                 
-                // 显示用户控制面板
-                showUserDashboard(result);
+                // 登录成功后跳转到匹配系统主页面
+                resultDiv.innerHTML = '<div class="success">✅ 登录成功！正在跳转到匹配系统...</div>';
+                
+                setTimeout(() => {
+                    window.location.href = '/dashboard';
+                }, 1000);
                 
             } catch (error) {
                 resultDiv.innerHTML = `<div class="error">❌ ${error.message}</div>`;
