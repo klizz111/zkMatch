@@ -386,6 +386,7 @@
                     <li><a href="#" onclick="showSection('preferences')">⚙️ 匹配偏好</a></li>
                     <li><a href="#" onclick="showSection('pushes')">💌 今日推送</a></li>
                     <li><a href="#" onclick="showSection('matches')">💕 我的匹配</a></li>
+                    <li><a href="/fhe_matching" class="nav-link" style="background: linear-gradient(45deg, #4CAF50, #45a049); color: white; border-radius: 8px; margin: 5px 0;">🔒 同态加密匹配</a></li>
                 </ul>
                 
                 <div class="stats-grid">
@@ -445,7 +446,7 @@
                             </div>
                             <div class="form-group">
                                 <label for="height">身高 (cm)</label>
-                                <input type="number" id="height" name="height" min="150" max="200">
+                                <input type="number" id="height" name="height" min="120" max="250">
                             </div>
                         </div>
                         
@@ -463,17 +464,6 @@
                                     <option value="phd">博士</option>
                                     <option value="other">其他</option>
                                 </select>
-                            </div>
-                        </div>
-                        
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="occupation">职业</label>
-                                <input type="text" id="occupation" name="occupation">
-                            </div>
-                            <div class="form-group">
-                                <label for="location">所在地</label>
-                                <input type="text" id="location" name="location">
                             </div>
                         </div>
                         
@@ -530,22 +520,6 @@
                                 <label for="maxHeight">最大身高 (cm)</label>
                                 <input type="number" id="maxHeight" name="max_height" min="150" max="200">
                             </div>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="preferredEducation">期望学历</label>
-                            <select id="preferredEducation" name="preferred_education">
-                                <option value="">无偏好</option>
-                                <option value="bachelor">本科</option>
-                                <option value="master">硕士</option>
-                                <option value="phd">博士</option>
-                                <option value="other">其他</option>
-                            </select>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="preferredLocation">期望地区</label>
-                            <input type="text" id="preferredLocation" name="preferred_location">
                         </div>
                         
                         <div class="form-group">
@@ -812,8 +786,6 @@
                     document.getElementById('height').value = profile.height || '';
                     document.getElementById('weight').value = profile.weight || '';
                     document.getElementById('education').value = profile.education || '';
-                    document.getElementById('occupation').value = profile.occupation || '';
-                    document.getElementById('location').value = profile.location || '';
                     document.getElementById('hobbies').value = profile.hobbies || '';
                     document.getElementById('bio').value = profile.bio || '';
                     document.getElementById('contact_info').value = profile.contact_info || '';
@@ -843,8 +815,6 @@
                     document.getElementById('maxAge').value = prefs.max_age || '';
                     document.getElementById('minHeight').value = prefs.min_height || '';
                     document.getElementById('maxHeight').value = prefs.max_height || '';
-                    document.getElementById('preferredEducation').value = prefs.preferred_education || '';
-                    document.getElementById('preferredLocation').value = prefs.preferred_location || '';
                     document.getElementById('dealBreakers').value = prefs.deal_breakers || '';
                 }
             } catch (error) {
@@ -883,20 +853,23 @@
                                         <span>${push.user_info.height || '未知'}cm</span>
                                     </div>
                                     <div class="info-item">
-                                        <strong>学历</strong>
+                                        <strong>教育</strong>
                                         <span>${getEducationText(push.user_info.education)}</span>
-                                    </div>
-                                    <div class="info-item">
-                                        <strong>职业</strong>
-                                        <span>${push.user_info.occupation || '未知'}</span>
-                                    </div>
-                                    <div class="info-item">
-                                        <strong>地区</strong>
-                                        <span>${push.user_info.location || '未知'}</span>
                                     </div>
                                 </div>
                                 ${push.user_info.hobbies ? `<p><strong>兴趣爱好：</strong>${push.user_info.hobbies}</p>` : ''}
                                 ${push.user_info.bio ? `<p><strong>个人简介：</strong>${push.user_info.bio}</p>` : ''}
+                                
+                                <div style="margin: 15px 0;">
+                                    <label style="font-weight: normal; display: flex; align-items: center; margin-bottom: 10px;">
+                                        <input type="checkbox" id="secure_match_${push.push_id}" style="margin-right: 8px;">
+                                        🔒 启用安全匹配模式
+                                    </label>
+                                    <small style="color: #666; margin-left: 24px;">
+                                        安全匹配模式下，双方的选择和联系方式都将被加密保护，只有匹配成功才能交换联系方式
+                                    </small>
+                                </div>
+                                
                                 <div class="push-actions">
                                     <button class="btn btn-success" onclick="respondToPush(${push.push_id}, 'accepted')">💕 接受</button>
                                     <button class="btn btn-secondary" onclick="respondToPush(${push.push_id}, 'rejected')">❌ 拒绝</button>

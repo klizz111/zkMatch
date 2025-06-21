@@ -1,3 +1,12 @@
-from app.app import app
+from app.app import app, init_database, init_api_routes
+import logging
 
-app.run(debug=True)
+if __name__ == '__main__':
+    # 应用启动时初始化
+    init_database()
+    init_api_routes()
+    
+    logging.info("Starting Flask application...")
+    app.run(debug=True)
+
+

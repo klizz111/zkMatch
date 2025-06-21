@@ -370,12 +370,9 @@
     <div class="container">
         <div class="left-panel">
             <h1>🔐 zk-login</h1>
-            <p>基于ElGamal加密和零知识证明的安全认证系统。无需传输密码，通过数学证明验证身份。</p>
-            <br>
-            <p>✨ 安全的用户注册系统<br>
-            🚀 仅需用户名+密码种子登录<br>
+            <p>
             🛡️ 私钥永不离开本地设备<br>
-            🔑 统一使用512位安全密钥</p>
+            🔑 使用512位私钥&emsp;&emsp;&emsp;</p>
         </div>
         
         <div class="right-panel">
@@ -402,7 +399,7 @@
                 <div id="registerResult"></div>
             </div>
             
-            <!-- 普通登录标签页 -->
+            <!-- 登录标签页 -->
             <div id="login" class="tab-content">
                 <div class="form-group">
                     <label for="loginUsername">用户名</label>
@@ -513,20 +510,17 @@
                     <br>
                     <p>✅ Session已建立<br>
                     🔒 24小时有效期<br>
-                    🚀 可进行后续操作<br>
-                    🛡️ 安全认证完成</p>
                 </div>
                 
                 <div class="right-panel">
                     <div class="user-header">
-                        <h2>用户控制面板</h2>
                         <p>当前用户: <strong>${result.user_info.username}</strong></p>
                         <p>Session ID: <span class="session-id">${result.session_id.substring(0, 16)}...</span></p>
                     </div>
                     
                     <div class="user-actions">
                         <button class="btn" onclick="loadUserInfo()">获取用户信息</button>
-                        <button class="btn" onclick="showUpdateProfile()">更新资料</button>
+                        <button class="btn" onclick="gotodashboard()">进入系统</button>
                         <button class="btn btn-secondary" onclick="validateCurrentSession()">验证Session</button>
                         <button class="btn btn-danger" onclick="logoutUser()">登出</button>
                     </div>
@@ -542,6 +536,11 @@
                     </div>
                 </div>
             `;
+        }
+        
+        function gotodashboard() {
+            // 跳转到匹配系统主页面
+            window.location.href = '/dashboard';
         }
         
         // 加载用户信息
