@@ -16,7 +16,7 @@ class DatabaseManager:
         if not self.isInitialized:
             try:
                 self.connect()
-                # 用户信息表
+                # 用户信息
                 self.create_table("user_data", 
                                 """id INTEGER PRIMARY KEY AUTOINCREMENT, 
                                 username TEXT NOT NULL UNIQUE, 
@@ -36,7 +36,7 @@ class DatabaseManager:
                                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP"""
                 )
                 
-                # 账户数据表
+                # 账户数据
                 self.create_table("account_data",
                                   """id INTEGER PRIMARY KEY AUTOINCREMENT, 
                                   username TEXT NOT NULL UNIQUE, 
@@ -49,7 +49,7 @@ class DatabaseManager:
                                   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP"""
                 )
                 
-                # 会话管理表
+                # 会话管理
                 self.create_table("session_ID",
                                 """id INTEGER PRIMARY KEY AUTOINCREMENT,
                                 session_id TEXT NOT NULL UNIQUE,
@@ -60,7 +60,7 @@ class DatabaseManager:
                                 FOREIGN KEY (username) REFERENCES user_data(username)"""
                 )
                 
-                # 匹配偏好表
+                # 匹配偏好
                 self.create_table("match_preferences",
                                 """id INTEGER PRIMARY KEY AUTOINCREMENT,
                                 username TEXT NOT NULL,
@@ -75,7 +75,7 @@ class DatabaseManager:
                                 FOREIGN KEY (username) REFERENCES user_data(username)"""
                 )
                 
-                # 推送记录表
+                # 推送记录
                 self.create_table("push_records",
                                 """id INTEGER PRIMARY KEY AUTOINCREMENT,
                                 from_user TEXT NOT NULL,
@@ -89,7 +89,7 @@ class DatabaseManager:
                                 UNIQUE(from_user, to_user, push_date)"""
                 )
                 
-                # 匹配结果表
+                # 匹配记录
                 self.create_table("matches",
                                 """id INTEGER PRIMARY KEY AUTOINCREMENT,
                                 user1 TEXT NOT NULL,
@@ -102,66 +102,18 @@ class DatabaseManager:
                                 UNIQUE(user1, user2)"""
                 )
                 
-                # 用户互动记录表
+                # 用户互动记录
                 self.create_table("user_interactions",
                                 """id INTEGER PRIMARY KEY AUTOINCREMENT,
                                 from_user TEXT NOT NULL,
                                 to_user TEXT NOT NULL,
-                                interaction_type TEXT CHECK(interaction_type IN ('view', 'like', 'skip', 'block')),
+                                interaction_type TEXT CHECK(interaction_type IN ('like', 'skip', 'super_like')),
                                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                                 FOREIGN KEY (from_user) REFERENCES user_data(username),
                                 FOREIGN KEY (to_user) REFERENCES user_data(username)"""
                 )
                 
-                # 系统统计表
-                self.create_table("system_stats",
-                                """id INTEGER PRIMARY KEY AUTOINCREMENT,
-                                stat_name TEXT NOT NULL UNIQUE,
-                                stat_value TEXT NOT NULL,
-                                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP"""
-                )
-                
-                # 同态加密匹配相关表
-                self.create_table("match_requests",
-                                """id INTEGER PRIMARY KEY AUTOINCREMENT,
-                                requester_id TEXT NOT NULL,
-                                target_id TEXT NOT NULL,
-                                requester_choice_cipher TEXT NOT NULL,
-                                requester_contact_data TEXT NOT NULL,
-                                status TEXT DEFAULT 'pending' CHECK(status IN ('pending', 'processed', 'expired')),
-                                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                                expires_at TIMESTAMP,
-                                FOREIGN KEY (requester_id) REFERENCES user_data(username),
-                                FOREIGN KEY (target_id) REFERENCES user_data(username),
-                                UNIQUE(requester_id, target_id, status)"""
-                )
-                
-                self.create_table("match_results",
-                                """id INTEGER PRIMARY KEY AUTOINCREMENT,
-                                request_id INTEGER NOT NULL,
-                                user1_id TEXT NOT NULL,
-                                user2_id TEXT NOT NULL,
-                                result_cipher TEXT NOT NULL,
-                                user1_contact_data TEXT NOT NULL,
-                                user2_contact_data TEXT NOT NULL,
-                                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                                FOREIGN KEY (request_id) REFERENCES match_requests(id) ON DELETE CASCADE,
-                                FOREIGN KEY (user1_id) REFERENCES user_data(username),
-                                FOREIGN KEY (user2_id) REFERENCES user_data(username)"""
-                )
-                
-                self.create_table("contact_exchanges",
-                                """id INTEGER PRIMARY KEY AUTOINCREMENT,
-                                match_result_id INTEGER NOT NULL,
-                                user_id TEXT NOT NULL,
-                                decrypted_contact TEXT,
-                                exchange_success BOOLEAN DEFAULT 0,
-                                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                                FOREIGN KEY (match_result_id) REFERENCES match_results(id) ON DELETE CASCADE,
-                                FOREIGN KEY (user_id) REFERENCES user_data(username)"""
-                )
-                
-                # 同态加密匹配会话表
+                # 同态加密匹配会话
                 self.create_table("fhe_match_sessions",
                                 """id INTEGER PRIMARY KEY AUTOINCREMENT,
                                 session_key TEXT NOT NULL UNIQUE,
@@ -184,7 +136,7 @@ class DatabaseManager:
                                 UNIQUE(user1_id, user2_id)"""
                 )
                 
-                # 安全匹配结果表
+                # 匹配结果
                 self.create_table("secure_match_results",
                                 """id INTEGER PRIMARY KEY AUTOINCREMENT,
                                 session_key TEXT NOT NULL,
@@ -196,10 +148,34 @@ class DatabaseManager:
                                 FOREIGN KEY (user_id) REFERENCES user_data(username)"""
                 )
                 
+                # 匹配会话
+                self.create_table("simple_match_sessions",
+                                """id INTEGER PRIMARY KEY AUTOINCREMENT,
+                                session_key TEXT NOT NULL UNIQUE,
+                                user1_id TEXT NOT NULL,
+                                user2_id TEXT NOT NULL,
+                                user1_dh_public TEXT,
+                                user2_dh_public TEXT,
+                                user1_choice BOOLEAN,
+                                user2_choice BOOLEAN,
+                                user1_contact TEXT,
+                                user2_contact TEXT,
+                                user1_responded BOOLEAN DEFAULT 0,
+                                user2_responded BOOLEAN DEFAULT 0,
+                                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                                FOREIGN KEY (user1_id) REFERENCES user_data(username),
+                                FOREIGN KEY (user2_id) REFERENCES user_data(username),
+                                UNIQUE(user1_id, user2_id)"""
+                )
+                
                 # 原有的推送记录表修改，添加安全匹配支持
-                self.execute_custom_sql("""
-                    ALTER TABLE push_records ADD COLUMN fhe_session_key TEXT;
-                """)
+                try:
+                    self.execute_custom_sql("""
+                        ALTER TABLE push_records ADD COLUMN session_key TEXT;
+                    """)
+                except:
+                    # 如果列已存在则忽略错误
+                    pass
                 
                 # account_data中添加root用户，将root的p,g,q,y设置为系统全局的群参数
                 elgamal = ElGamal(bits=512)
@@ -389,6 +365,8 @@ class DatabaseManager:
         Returns:
             生成的session ID
         """
+        print("call generate_session_id")
+
         try:
             # 生成32字节的随机session ID
             session_id = secrets.token_urlsafe(32)
@@ -665,10 +643,8 @@ class DatabaseManager:
                         'gender': user_data['gender'],
                         'height': user_data['height'],
                         'education': user_data['education'],
-                        'occupation': user_data['occupation'],
                         'hobbies': user_data['hobbies'],
-                        'bio': user_data['bio'],
-                        'location': user_data['location']
+                        'bio': user_data['bio']
                     }
                     result.append({
                         'push_id': push['id'],

@@ -6,7 +6,7 @@ if __name__ == '__main__':
     init_database()
     init_api_routes()
     
-    logging.info("Starting Flask application...")
+    logging.info("Starting secure matching application...")
     app.run(debug=True)
 
 

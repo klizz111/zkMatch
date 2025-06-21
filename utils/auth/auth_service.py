@@ -132,16 +132,9 @@ class AuthService:
             is_valid = dlogProofVerify(y, g, p, proof)
             
             if is_valid:
-                # 登录成功，生成session ID
-                session_id = self.db.generate_session_id(username)
                 
                 return {
                     'success': True,
-                    'message': 'Login successful',
-                    'session_id': session_id,
-                    'user_info': {
-                        'username': username
-                    }
                 }
             else:
                 return {'success': False, 'error': 'Invalid proof'}

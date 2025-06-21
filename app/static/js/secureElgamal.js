@@ -91,6 +91,86 @@ class SecureElGamal {
         };
     }
     
+    // 登录功能
+    async login(username, password) {
+        try {
+            const response = await fetch('/api/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ username, password })
+            });
+
+            const data = await response.json();
+            
+            if (data.success) {
+                // 存储session到localStorage
+                localStorage.setItem('zk_current_session', JSON.stringify(data.session));
+                this.currentSession = data.session;
+                return { success: true, message: data.message };
+            } else {
+                return { success: false, message: data.message };
+            }
+        } catch (error) {
+            console.error('登录请求失败:', error);
+            return { success: false, message: '网络错误，请重试' };
+        }
+    }
+
+    // 验证session
+    async validateSession() {
+        try {
+            // 从localStorage获取session
+            const sessionData = localStorage.getItem('zk_current_session');
+            if (!sessionData || sessionData === 'null' || sessionData === 'undefined') {
+                return false;
+            }
+
+            let session;
+            try {
+                session = JSON.parse(sessionData);
+            } catch (parseError) {
+                console.warn('Session数据损坏，清除localStorage');
+                localStorage.removeItem('zk_current_session');
+                return false;
+            }
+
+            if (!session.username || !session.token) {
+                return false;
+            }
+
+            // 向服务器验证session
+            const response = await fetch('/api/validate_session', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    username: session.username,
+                    token: session.token
+                })
+            });
+
+            const result = await response.json();
+            
+            if (result.valid) {
+                this.currentSession = session;
+                return true;
+            } else {
+                // session无效，清除localStorage
+                localStorage.removeItem('zk_current_session');
+                this.currentSession = null;
+                return false;
+            }
+        } catch (error) {
+            console.error('Session验证失败:', error);
+            localStorage.removeItem('zk_current_session');
+            this.currentSession = null;
+            return false;
+        }
+    }
+    
     // 零知识证明登录
     async zkLogin(username, seed) {
         try {

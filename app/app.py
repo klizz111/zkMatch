@@ -7,7 +7,7 @@ import logging
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from utils.database.dataBase import DatabaseManager
-from utils.api import AuthRoutes, MatchingRoutes, FHEMatchingRoutes
+from utils.api import AuthRoutes, MatchingRoutes
 
 app = Flask(__name__)
 app.config['DATABASE_PATH'] = 'datastorage.db'
@@ -28,8 +28,6 @@ def init_database():
             logging.info("数据库文件不存在，正在创建新数据库...")
             db = DatabaseManager(db_path)
             db.initialize()
-        else:
-            logging.info("数据库文件已存在，跳过初始化。")
         
         _db_initialized = True
 
@@ -58,13 +56,8 @@ def index():
 
 @app.route('/dashboard')
 def dashboard():
-    """匹配系统主页面"""
+    """主页面"""
     return render_template('index.html')
-
-@app.route('/fhe_matching')
-def fhe_matching():
-    """同态加密匹配系统页面"""
-    return render_template('fhe_matching.html')
 
 # 初始化API路由
 def init_api_routes():
@@ -74,11 +67,8 @@ def init_api_routes():
     # 初始化认证路由
     auth_routes = AuthRoutes(app, db_path)
     
-    # 初始化匹配系统路由，传入认证装饰器
+    # 初始化匹配路由
     matching_routes = MatchingRoutes(app, db_path, auth_routes.require_session)
-    
-    # 初始化FHE同态加密匹配路由
-    fhe_matching_routes = FHEMatchingRoutes(app, db_path, auth_routes.require_session)
     
     logging.info("API routes initialized successfully")
 

@@ -3,1131 +3,810 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>网恋匹配系统</title>
+    <title>匹配系统</title>
+    <link href="/static/css/bootstrap.min.css" rel="stylesheet">
+    <link href="/static/css/all.min.css" rel="stylesheet">
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
-            color: #333;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
-        
-        .container {
+
+        .main-container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+            margin: 20px auto;
             max-width: 1200px;
-            margin: 0 auto;
-            padding: 20px;
+            padding: 0;
+            overflow: hidden;
         }
-        
-        .header {
-            background: rgba(255, 255, 255, 0.95);
-            padding: 20px;
-            border-radius: 15px;
-            margin-bottom: 20px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        
-        .header h1 {
-            color: #667eea;
-            font-size: 2em;
-        }
-        
-        .user-info {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-        }
-        
-        .user-info span {
-            font-weight: 600;
-            color: #555;
-        }
-        
-        .btn {
-            padding: 10px 20px;
-            background: linear-gradient(45deg, #667eea, #764ba2);
+
+        .header-section {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
-            border: none;
-            border-radius: 8px;
-            font-size: 14px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: transform 0.2s ease;
-            text-decoration: none;
-            display: inline-block;
-        }
-        
-        .btn:hover {
-            transform: translateY(-2px);
-        }
-        
-        .btn-secondary {
-            background: #6c757d;
-        }
-        
-        .btn-danger {
-            background: linear-gradient(45deg, #dc3545, #c82333);
-        }
-        
-        .btn-success {
-            background: linear-gradient(45deg, #28a745, #20c997);
-        }
-        
-        .btn-warning {
-            background: linear-gradient(45deg, #ffc107, #fd7e14);
-        }
-        
-        .btn:disabled {
-            background: #ccc;
-            cursor: not-allowed;
-            transform: none;
-        }
-        
-        .main-content {
-            display: grid;
-            grid-template-columns: 1fr 2fr;
-            gap: 20px;
-        }
-        
-        .sidebar {
-            background: rgba(255, 255, 255, 0.95);
-            padding: 20px;
-            border-radius: 15px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-            height: fit-content;
-        }
-        
-        .content-area {
-            background: rgba(255, 255, 255, 0.95);
-            padding: 20px;
-            border-radius: 15px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-            min-height: 600px;
-        }
-        
-        .nav-menu {
-            list-style: none;
-            margin-bottom: 20px;
-        }
-        
-        .nav-menu li {
-            margin-bottom: 10px;
-        }
-        
-        .nav-menu a {
-            display: block;
-            padding: 12px 15px;
-            color: #555;
-            text-decoration: none;
-            border-radius: 8px;
-            transition: all 0.3s ease;
-            font-weight: 500;
-        }
-        
-        .nav-menu a:hover, .nav-menu a.active {
-            background: linear-gradient(45deg, #667eea, #764ba2);
-            color: white;
-        }
-        
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 15px;
-            margin-bottom: 20px;
-        }
-        
-        .stat-card {
-            background: #f8f9fa;
-            padding: 15px;
-            border-radius: 8px;
+            padding: 30px;
             text-align: center;
-            border-left: 4px solid #667eea;
+            border-radius: 20px 20px 0 0;
         }
-        
-        .stat-card h3 {
-            font-size: 1.8em;
-            color: #667eea;
-            margin-bottom: 5px;
+
+        .header-section h1 {
+            margin: 0;
+            font-weight: 300;
+            font-size: 2.5rem;
         }
-        
-        .stat-card p {
-            color: #666;
-            font-size: 0.9em;
+
+        .header-section .subtitle {
+            margin-top: 10px;
+            opacity: 0.9;
+            font-size: 1.1rem;
         }
-        
-        .form-group {
-            margin-bottom: 20px;
+
+        .content-section {
+            padding: 30px;
         }
-        
-        .form-group label {
-            display: block;
-            margin-bottom: 8px;
-            color: #333;
-            font-weight: 500;
+
+        .custom-card {
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+            margin-bottom: 25px;
+            overflow: hidden;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
         }
-        
-        .form-group input,
-        .form-group select,
-        .form-group textarea {
-            width: 100%;
-            padding: 12px;
-            border: 2px solid #e1e5e9;
-            border-radius: 8px;
-            font-size: 14px;
-            transition: border-color 0.3s ease;
+
+        .custom-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
         }
-        
-        .form-group input:focus,
-        .form-group select:focus,
-        .form-group textarea:focus {
-            outline: none;
-            border-color: #667eea;
-        }
-        
-        .form-group textarea {
-            resize: vertical;
-            min-height: 80px;
-        }
-        
-        .form-row {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 15px;
-        }
-        
-        .push-card {
-            background: #f8f9fa;
-            border: 1px solid #dee2e6;
-            border-radius: 12px;
+
+        .custom-card-header {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-bottom: 1px solid #dee2e6;
             padding: 20px;
-            margin-bottom: 20px;
+            border-radius: 15px 15px 0 0;
+        }
+
+        .custom-card-header h5 {
+            margin: 0;
+            color: #495057;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .custom-card-body {
+            padding: 25px;
+        }
+
+        .matching-card {
+            border: 1px solid #e9ecef;
+            border-radius: 15px;
+            padding: 20px;
+            margin: 15px 0;
+            background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.05);
             transition: all 0.3s ease;
         }
-        
-        .push-card:hover {
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+
+        .matching-card:hover {
             transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
         }
-        
-        .push-card h3 {
-            color: #667eea;
-            margin-bottom: 10px;
-        }
-        
-        .push-card .info-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 10px;
-            margin-bottom: 15px;
-        }
-        
-        .push-card .info-item {
-            background: white;
-            padding: 8px 12px;
-            border-radius: 6px;
-            border-left: 3px solid #667eea;
-        }
-        
-        .push-card .info-item strong {
-            color: #333;
-            display: block;
+
+        .status-indicator {
+            padding: 8px 16px;
+            border-radius: 25px;
             font-size: 0.9em;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
         }
-        
-        .push-card .info-item span {
-            color: #666;
-            font-size: 0.85em;
-        }
-        
-        .push-actions {
-            display: flex;
-            gap: 10px;
-            justify-content: flex-end;
-        }
-        
-        .match-card {
-            background: linear-gradient(45deg, #e8f5e8, #f0f8ff);
-            border: 1px solid #28a745;
-            border-radius: 12px;
-            padding: 20px;
-            margin-bottom: 20px;
-        }
-        
-        .match-card h3 {
-            color: #28a745;
-            margin-bottom: 10px;
-        }
-        
-        .alert {
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            font-weight: 500;
-        }
-        
-        .alert-success {
-            background: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
-        }
-        
-        .alert-error {
-            background: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
-        }
-        
-        .alert-warning {
-            background: #fff3cd;
-            color: #856404;
+
+        .status-waiting { 
+            background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%); 
+            color: #856404; 
             border: 1px solid #ffeaa7;
         }
-        
-        .alert-info {
-            background: #d1ecf1;
-            color: #0c5460;
-            border: 1px solid #bee5eb;
+
+        .status-matched { 
+            background: linear-gradient(135deg, #d4edda 0%, #00b894 100%); 
+            color: #155724; 
+            border: 1px solid #00b894;
         }
-        
-        .loading {
-            text-align: center;
-            padding: 40px;
-            color: #667eea;
-            font-style: italic;
+
+        .status-rejected { 
+            background: linear-gradient(135deg, #f8d7da 0%, #e17055 100%); 
+            color: #721c24; 
+            border: 1px solid #e17055;
         }
-        
-        .empty-state {
-            text-align: center;
-            padding: 40px;
-            color: #666;
-        }
-        
-        .empty-state h3 {
-            color: #999;
-            margin-bottom: 10px;
-        }
-        
-        .profile-completion {
-            background: linear-gradient(45deg, #fff3cd, #ffeaa7);
-            border: 1px solid #ffc107;
-            border-radius: 12px;
+
+        .contact-info-section {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
             padding: 20px;
-            margin-bottom: 20px;
+            border-radius: 15px;
+            margin: 15px 0;
+            border: 1px solid #dee2e6;
         }
-        
-        .profile-completion h3 {
-            color: #856404;
-            margin-bottom: 10px;
+
+        .custom-btn {
+            border-radius: 25px;
+            padding: 10px 25px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            border: none;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
-        
-        .section {
-            display: none;
+
+        .custom-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
         }
-        
-        .section.active {
-            display: block;
+
+        .btn-primary.custom-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         }
-        
-        .section h2 {
+
+        .btn-success.custom-btn {
+            background: linear-gradient(135deg, #00b894 0%, #00cec9 100%);
+        }
+
+        .btn-danger.custom-btn {
+            background: linear-gradient(135deg, #e17055 0%, #fd79a8 100%);
+        }
+
+        .btn-secondary.custom-btn {
+            background: linear-gradient(135deg, #636e72 0%, #2d3436 100%);
+        }
+
+        .btn-outline-primary.custom-btn {
+            border: 2px solid #667eea;
             color: #667eea;
-            margin-bottom: 20px;
-            border-bottom: 2px solid #667eea;
-            padding-bottom: 10px;
+            background: transparent;
         }
-        
+
+        .btn-outline-primary.custom-btn:hover {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-outline-success.custom-btn {
+            border: 2px solid #00b894;
+            color: #00b894;
+            background: transparent;
+        }
+
+        .btn-outline-success.custom-btn:hover {
+            background: linear-gradient(135deg, #00b894 0%, #00cec9 100%);
+            color: white;
+        }
+
+        .form-control {
+            border-radius: 10px;
+            border: 2px solid #e9ecef;
+            padding: 12px 15px;
+            transition: all 0.3s ease;
+        }
+
+        .form-control:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+        }
+
+        .user-info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin: 15px 0;
+        }
+
+        .user-info-item {
+            background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+            padding: 15px;
+            border-radius: 10px;
+            border: 1px solid #e9ecef;
+        }
+
+        .user-info-item strong {
+            color: #495057;
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .modal-content {
+            border-radius: 20px;
+            border: none;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+        }
+
+        .modal-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 20px 20px 0 0;
+            border-bottom: none;
+        }
+
+        .alert-custom {
+            border-radius: 10px;
+            border: none;
+            padding: 15px 20px;
+        }
+
         @media (max-width: 768px) {
-            .main-content {
-                grid-template-columns: 1fr;
+            .main-container {
+                margin: 10px;
+                border-radius: 15px;
             }
             
-            .header {
-                flex-direction: column;
-                gap: 15px;
-                text-align: center;
+            .header-section {
+                padding: 20px;
+                border-radius: 15px 15px 0 0;
             }
             
-            .form-row {
-                grid-template-columns: 1fr;
+            .header-section h1 {
+                font-size: 2rem;
             }
             
-            .stats-grid {
-                grid-template-columns: repeat(2, 1fr);
-            }
-            
-            .push-card .info-grid {
-                grid-template-columns: 1fr;
+            .content-section {
+                padding: 20px;
             }
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <h1>💕 网恋匹配系统</h1>
-            <div class="user-info">
-                <span id="currentUser">加载中...</span>
-                <button class="btn btn-danger" onclick="logout()">登出</button>
+    <div class="container-fluid">
+        <div class="main-container">
+            <!-- 头部区域 -->
+            <div class="header-section">
+                <h1><i class="fas fa-shield-alt"></i> 同态加密安全匹配系统</h1>
+                <div class="subtitle">基于零知识证明的隐私保护匹配平台</div>
             </div>
-        </div>
-        
-        <div class="main-content">
-            <div class="sidebar">
-                <ul class="nav-menu">
-                    <li><a href="#" class="active" onclick="showSection('dashboard')">🏠 仪表板</a></li>
-                    <li><a href="#" onclick="showSection('profile')">👤 个人资料</a></li>
-                    <li><a href="#" onclick="showSection('preferences')">⚙️ 匹配偏好</a></li>
-                    <li><a href="#" onclick="showSection('pushes')">💌 今日推送</a></li>
-                    <li><a href="#" onclick="showSection('matches')">💕 我的匹配</a></li>
-                    <li><a href="/fhe_matching" class="nav-link" style="background: linear-gradient(45deg, #4CAF50, #45a049); color: white; border-radius: 8px; margin: 5px 0;">🔒 同态加密匹配</a></li>
-                </ul>
-                
-                <div class="stats-grid">
-                    <div class="stat-card">
-                        <h3 id="todayPushes">-</h3>
-                        <p>今日推送</p>
+
+            <div class="content-section">
+                <!-- 用户信息区域 -->
+                <div class="custom-card">
+                    <div class="custom-card-header">
+                        <h5><i class="fas fa-user"></i> 个人信息</h5>
                     </div>
-                    <div class="stat-card">
-                        <h3 id="pendingPushes">-</h3>
-                        <p>待处理</p>
-                    </div>
-                    <div class="stat-card">
-                        <h3 id="totalMatches">-</h3>
-                        <p>总匹配</p>
-                    </div>
-                    <div class="stat-card">
-                        <h3 id="acceptanceRate">-</h3>
-                        <p>接受率</p>
+                    <div class="custom-card-body">
+                        <div id="userInfo">
+                            <div class="text-center">
+                                <i class="fas fa-spinner fa-spin fa-2x text-primary"></i>
+                                <p class="mt-2">正在加载用户信息...</p>
+                            </div>
+                        </div>
+                        <div class="d-flex gap-2 flex-wrap mt-3">
+                            <button class="btn btn-primary custom-btn" onclick="showProfileModal()">
+                                <i class="fas fa-edit"></i> 完善资料
+                            </button>
+                            <button class="btn btn-secondary custom-btn" onclick="logout()">
+                                <i class="fas fa-sign-out-alt"></i> 退出登录
+                            </button>
+                        </div>
                     </div>
                 </div>
-            </div>
-            
-            <div class="content-area">
-                <!-- 仪表板部分 -->
-                <div id="dashboard" class="section active">
-                    <h2>🏠 仪表板</h2>
-                    <div id="profileStatus"></div>
-                    <div id="dashboardContent">
-                        <div class="loading">加载中...</div>
+
+                <!-- 联系方式设置区域 -->
+                <div class="custom-card">
+                    <div class="custom-card-header">
+                        <h5><i class="fas fa-address-book"></i> 联系方式设置</h5>
+                        <small class="text-muted d-block mt-1">
+                            <i class="fas fa-lock"></i> 注意：联系方式仅在本地存储，不会上传到服务器
+                        </small>
+                    </div>
+                    <div class="custom-card-body">
+                        <div class="contact-info-section">
+                            <div class="mb-3">
+                                <label for="contactInfo" class="form-label">
+                                    <i class="fas fa-phone"></i> 联系方式
+                                </label>
+                                <input type="text" class="form-control" id="contactInfo" 
+                                       placeholder="例如：微信号、QQ号、手机号等" 
+                                       value="">
+                            </div>
+                            <button class="btn btn-success custom-btn" onclick="saveContactInfo()">
+                                <i class="fas fa-save"></i> 保存联系方式
+                            </button>
+                            <div id="contactStatus" class="mt-3"></div>
+                        </div>
                     </div>
                 </div>
-                
-                <!-- 个人资料部分 -->
-                <div id="profile" class="section">
-                    <h2>👤 个人资料</h2>
-                    <form id="profileForm">
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="nickname">昵称 *</label>
-                                <input type="text" id="nickname" name="nickname" required>
-                            </div>
-                            <div class="form-group">
-                                <label for="age">年龄 *</label>
-                                <input type="number" id="age" name="age" min="18" max="50" required>
-                            </div>
-                        </div>
-                        
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="gender">性别 *</label>
-                                <select id="gender" name="gender" required>
-                                    <option value="">请选择</option>
-                                    <option value="male">男</option>
-                                    <option value="female">女</option>
-                                    <option value="other">其他</option>
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label for="height">身高 (cm)</label>
-                                <input type="number" id="height" name="height" min="120" max="250">
-                            </div>
-                        </div>
-                        
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="weight">体重 (kg)</label>
-                                <input type="number" id="weight" name="weight" min="40" max="150" step="0.1">
-                            </div>
-                            <div class="form-group">
-                                <label for="education">学历</label>
-                                <select id="education" name="education">
-                                    <option value="">请选择</option>
-                                    <option value="bachelor">本科</option>
-                                    <option value="master">硕士</option>
-                                    <option value="phd">博士</option>
-                                    <option value="other">其他</option>
-                                </select>
-                            </div>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="hobbies">兴趣爱好</label>
-                            <input type="text" id="hobbies" name="hobbies" placeholder="如：音乐、运动、阅读等">
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="bio">个人简介 *</label>
-                            <textarea id="bio" name="bio" placeholder="介绍一下自己吧..." required></textarea>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="contact_info">联系方式</label>
-                            <input type="text" id="contact_info" name="contact_info" placeholder="QQ、微信等">
-                        </div>
-                        
-                        <button type="submit" class="btn">保存资料</button>
-                    </form>
-                </div>
-                
-                <!-- 匹配偏好部分 -->
-                <div id="preferences" class="section">
-                    <h2>⚙️ 匹配偏好</h2>
-                    <form id="preferencesForm">
-                        <div class="form-group">
-                            <label for="preferredGender">期望性别</label>
-                            <select id="preferredGender" name="preferred_gender">
-                                <option value="">无偏好</option>
-                                <option value="male">男</option>
-                                <option value="female">女</option>
-                                <option value="other">其他</option>
-                            </select>
-                        </div>
-                        
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="minAge">最小年龄</label>
-                                <input type="number" id="minAge" name="min_age" min="18" max="50">
-                            </div>
-                            <div class="form-group">
-                                <label for="maxAge">最大年龄</label>
-                                <input type="number" id="maxAge" name="max_age" min="18" max="50">
-                            </div>
-                        </div>
-                        
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="minHeight">最小身高 (cm)</label>
-                                <input type="number" id="minHeight" name="min_height" min="150" max="200">
-                            </div>
-                            <div class="form-group">
-                                <label for="maxHeight">最大身高 (cm)</label>
-                                <input type="number" id="maxHeight" name="max_height" min="150" max="200">
-                            </div>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="dealBreakers">拒绝条件</label>
-                            <textarea id="dealBreakers" name="deal_breakers" placeholder="描述你的拒绝条件..."></textarea>
-                        </div>
-                        
-                        <button type="submit" class="btn">保存偏好</button>
-                    </form>
-                </div>
-                
-                <!-- 今日推送部分 -->
-                <div id="pushes" class="section">
-                    <h2>💌 今日推送</h2>
-                    <div class="push-actions" style="margin-bottom: 20px;">
-                        <button class="btn btn-success" onclick="generatePushes()">生成新推送</button>
-                        <button class="btn btn-secondary" onclick="loadPushes()">刷新</button>
+
+                <!-- 每日推送区域 -->
+                <div class="custom-card">
+                    <div class="custom-card-header d-flex justify-content-between align-items-center">
+                        <h5><i class="fas fa-heart"></i> 每日推送</h5>
+                        <button class="btn btn-outline-primary custom-btn btn-sm" onclick="refreshPushes()">
+                            <i class="fas fa-sync-alt"></i> 刷新推送
+                        </button>
                     </div>
-                    <div id="pushesContent">
-                        <div class="loading">加载中...</div>
+                    <div class="custom-card-body">
+                        <div id="dailyPushes">
+                            <div class="text-center">
+                                <i class="fas fa-spinner fa-spin fa-2x text-primary"></i>
+                                <p class="mt-2">正在加载推送...</p>
+                            </div>
+                        </div>
                     </div>
                 </div>
-                
-                <!-- 我的匹配部分 -->
-                <div id="matches" class="section">
-                    <h2>💕 我的匹配</h2>
-                    <div id="matchesContent">
-                        <div class="loading">加载中...</div>
+
+                <!-- 匹配状态区域 -->
+                <div class="custom-card">
+                    <div class="custom-card-header d-flex justify-content-between align-items-center">
+                        <h5><i class="fas fa-chart-line"></i> 匹配状态</h5>
+                        <button class="btn btn-outline-success custom-btn btn-sm" onclick="refreshMatchingStatus()">
+                            <i class="fas fa-refresh"></i> 刷新状态
+                        </button>
+                    </div>
+                    <div class="custom-card-body">
+                        <div id="matchingStatus">
+                            <div class="text-center text-muted">
+                                <i class="fas fa-search fa-2x"></i>
+                                <p class="mt-2">暂无匹配状态</p>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <script src="{{ url_for('static', filename='js/secureElgamal.js') }}"></script>
+    <!-- 个人资料模态框 -->
+    <div class="modal fade" id="profileModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="fas fa-user-edit"></i> 完善个人资料</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="profileForm">
+                        <div class="mb-3">
+                            <label for="profileName" class="form-label">
+                                <i class="fas fa-signature"></i> 姓名
+                            </label>
+                            <input type="text" class="form-control" id="profileName" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="profileAge" class="form-label">
+                                <i class="fas fa-birthday-cake"></i> 年龄
+                            </label>
+                            <input type="number" class="form-control" id="profileAge" min="18" max="100" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="profileGender" class="form-label">
+                                <i class="fas fa-venus-mars"></i> 性别
+                            </label>
+                            <select class="form-control" id="profileGender" required>
+                                <option value="">请选择</option>
+                                <option value="男">男</option>
+                                <option value="女">女</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="profileInterests" class="form-label">
+                                <i class="fas fa-heart"></i> 兴趣爱好
+                            </label>
+                            <textarea class="form-control" id="profileInterests" rows="3"></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label for="profileBio" class="form-label">
+                                <i class="fas fa-user-circle"></i> 个人简介
+                            </label>
+                            <textarea class="form-control" id="profileBio" rows="3"></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary custom-btn" data-bs-dismiss="modal">
+                        <i class="fas fa-times"></i> 取消
+                    </button>
+                    <button type="button" class="btn btn-primary custom-btn" onclick="updateProfile()">
+                        <i class="fas fa-save"></i> 保存
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/js/bootstrap.bundle.min.js"></script>
+    <script src="/static/js/secureElgamal.js"></script>
+    <script src="/static/js/fheMatching.js"></script>
     <script>
-        let secureElgamal = new SecureElGamal(256);
-        let currentUser = null;
-        let currentSession = null;
-        
+        // 全局变量
+        let elgamal = null;
+        let fheMatching = null;
+        let currentPushes = [];
+        let userContactInfo = '';
+
         // 页面加载时初始化
         document.addEventListener('DOMContentLoaded', async function() {
             try {
-                // 检查是否有有效的session
-                const session = secureElgamal.getCurrentSession();
-                if (!session.sessionId || !session.username) {
+                // 检查登录状态
+                let currentSession = null;
+                try {
+                    const sessionData = localStorage.getItem('zk_current_session');
+                    if (sessionData && sessionData !== 'null' && sessionData !== 'undefined') {
+                        currentSession = JSON.parse(sessionData);
+                    }
+                } catch (jsonError) {
+                    console.warn('解析session数据失败，清除无效数据:', jsonError);
+                    localStorage.removeItem('zk_current_session');
+                    currentSession = null;
+                }
+                
+                if (!currentSession || !currentSession.username || !currentSession.token) {
                     window.location.href = '/';
                     return;
                 }
-                
-                // 验证session是否有效
-                const isValid = await secureElgamal.validateSession(session.sessionId);
+
+                // 初始化ElGamal和FHE系统
+                elgamal = new SecureElGamal();
+                fheMatching = new FHEMatching();
+
+                // 验证session
+                const isValid = await validateCurrentSession(currentSession);
                 if (!isValid) {
                     alert('登录已过期，请重新登录');
+                    localStorage.removeItem('zk_current_session');
                     window.location.href = '/';
                     return;
                 }
+
+                // 初始化FHE系统
+                const initSuccess = await fheMatching.initializeSystem();
+                if (!initSuccess) {
+                    alert('系统初始化失败');
+                    return;
+                }
+
+                // 生成DH密钥对
+                fheMatching.generateDHKeypair();
+
+                // 加载用户信息
+                await loadUserInfo();
                 
-                currentUser = session.username;
-                currentSession = session.sessionId;
+                // 加载联系方式
+                loadContactInfo();
                 
-                // 更新用户信息显示
-                document.getElementById('currentUser').textContent = `欢迎，${currentUser}`;
-                
-                // 加载初始数据
-                await loadStats();
-                await loadDashboard();
-                
+                // 加载每日推送
+                await loadDailyPushes();
+
             } catch (error) {
                 console.error('初始化失败:', error);
-                alert('初始化失败，请重新登录');
-                window.location.href = '/';
+                // 如果是JSON解析相关错误，清除可能损坏的本地存储数据
+                if (error.message && error.message.includes('JSON')) {
+                    console.warn('检测到JSON解析错误，清除本地存储数据');
+                    localStorage.removeItem('zk_current_session');
+                    localStorage.removeItem('user_contact_info');
+                    alert('检测到数据损坏，请重新登录');
+                    window.location.href = '/';
+                    return;
+                }
+                alert('系统初始化失败: ' + error.message);
             }
         });
-        
-        // 显示不同的部分
-        function showSection(sectionName) {
-            // 隐藏所有部分
-            document.querySelectorAll('.section').forEach(section => {
-                section.classList.remove('active');
-            });
-            
-            // 移除所有菜单项的active类
-            document.querySelectorAll('.nav-menu a').forEach(link => {
-                link.classList.remove('active');
-            });
-            
-            // 显示选中的部分
-            document.getElementById(sectionName).classList.add('active');
-            
-            // 激活对应的菜单项
-            event.target.classList.add('active');
-            
-            // 加载对应的内容
-            loadSectionContent(sectionName);
-        }
-        
-        // 加载部分内容
-        async function loadSectionContent(sectionName) {
-            switch(sectionName) {
-                case 'dashboard':
-                    await loadDashboard();
-                    break;
-                case 'profile':
-                    await loadProfile();
-                    break;
-                case 'preferences':
-                    await loadPreferences();
-                    break;
-                case 'pushes':
-                    await loadPushes();
-                    break;
-                case 'matches':
-                    await loadMatches();
-                    break;
-            }
-        }
-        
-        // 加载统计数据
-        async function loadStats() {
+
+        // 验证当前session
+        async function validateCurrentSession(session) {
             try {
-                const response = await fetch('/api/stats', {
-                    headers: {
-                        'Authorization': `Bearer ${currentSession}`
-                    }
-                });
-                
-                const data = await response.json();
-                
-                if (data.success) {
-                    document.getElementById('todayPushes').textContent = data.stats.today_pushes;
-                    document.getElementById('pendingPushes').textContent = data.stats.pending_pushes;
-                    document.getElementById('totalMatches').textContent = data.stats.total_matches;
-                    document.getElementById('acceptanceRate').textContent = data.stats.acceptance_rate + '%';
-                } else {
-                    console.error('加载统计数据失败:', data.error);
-                }
-            } catch (error) {
-                console.error('加载统计数据失败:', error);
-            }
-        }
-        
-        // 加载仪表板
-        async function loadDashboard() {
-            try {
-                // 检查资料完整性
-                const profileResponse = await fetch('/api/profile_status', {
-                    headers: {
-                        'Authorization': `Bearer ${currentSession}`
-                    }
-                });
-                
-                const profileData = await profileResponse.json();
-                const profileStatusEl = document.getElementById('profileStatus');
-                
-                if (!profileData.profile_complete) {
-                    profileStatusEl.innerHTML = `
-                        <div class="profile-completion">
-                            <h3>⚠️ 请完善您的个人资料</h3>
-                            <p>您需要完善以下信息才能开始匹配：</p>
-                            <ul style="margin: 10px 0 15px 20px;">
-                                ${profileData.missing_fields.map(field => `<li>${getFieldName(field)}</li>`).join('')}
-                            </ul>
-                            <button class="btn btn-warning" onclick="showSection('profile')">立即完善</button>
-                        </div>
-                    `;
-                } else {
-                    profileStatusEl.innerHTML = `
-                        <div class="alert alert-success">
-                            ✅ 您的资料已完善，可以开始接收匹配推送了！
-                        </div>
-                    `;
-                }
-                
-                // 显示今日推送概览
-                await loadPushesPreview();
-                
-            } catch (error) {
-                console.error('加载仪表板失败:', error);
-                document.getElementById('dashboardContent').innerHTML = `
-                    <div class="alert alert-error">加载失败: ${error.message}</div>
-                `;
-            }
-        }
-        
-        // 加载推送预览
-        async function loadPushesPreview() {
-            try {
-                const response = await fetch('/api/daily_pushes', {
-                    headers: {
-                        'Authorization': `Bearer ${currentSession}`
-                    }
-                });
-                
-                const data = await response.json();
-                const contentEl = document.getElementById('dashboardContent');
-                
-                if (data.success) {
-                    if (data.pushes.length > 0) {
-                        const latestPush = data.pushes[0];
-                        contentEl.innerHTML += `
-                            <div class="push-card">
-                                <h3>💌 最新推送</h3>
-                                <div class="info-grid">
-                                    <div class="info-item">
-                                        <strong>昵称</strong>
-                                        <span>${latestPush.user_info.nickname}</span>
-                                    </div>
-                                    <div class="info-item">
-                                        <strong>年龄</strong>
-                                        <span>${latestPush.user_info.age || '未知'}</span>
-                                    </div>
-                                    <div class="info-item">
-                                        <strong>性别</strong>
-                                        <span>${getGenderText(latestPush.user_info.gender)}</span>
-                                    </div>
-                                    <div class="info-item">
-                                        <strong>身高</strong>
-                                        <span>${latestPush.user_info.height || '未知'}cm</span>
-                                    </div>
-                                </div>
-                                <div class="push-actions">
-                                    <button class="btn btn-success" onclick="showSection('pushes')">查看所有推送</button>
-                                </div>
-                            </div>
-                        `;
-                    } else {
-                        contentEl.innerHTML += `
-                            <div class="empty-state">
-                                <h3>😴 今日暂无推送</h3>
-                                <p>点击"生成新推送"按钮获取匹配对象</p>
-                                <button class="btn btn-success" onclick="generatePushes()">生成新推送</button>
-                            </div>
-                        `;
-                    }
-                } else {
-                    contentEl.innerHTML += `
-                        <div class="alert alert-warning">${data.message}</div>
-                    `;
-                }
-            } catch (error) {
-                console.error('加载推送预览失败:', error);
-            }
-        }
-        
-        // 加载个人资料
-        async function loadProfile() {
-            try {
-                const response = await fetch('/api/profile_status', {
-                    headers: {
-                        'Authorization': `Bearer ${currentSession}`
-                    }
-                });
-                
-                const data = await response.json();
-                
-                if (data.success) {
-                    const profile = data.profile_data;
-                    
-                    // 填充表单
-                    document.getElementById('nickname').value = profile.nickname || '';
-                    document.getElementById('age').value = profile.age || '';
-                    document.getElementById('gender').value = profile.gender || '';
-                    document.getElementById('height').value = profile.height || '';
-                    document.getElementById('weight').value = profile.weight || '';
-                    document.getElementById('education').value = profile.education || '';
-                    document.getElementById('hobbies').value = profile.hobbies || '';
-                    document.getElementById('bio').value = profile.bio || '';
-                    document.getElementById('contact_info').value = profile.contact_info || '';
-                }
-            } catch (error) {
-                console.error('加载个人资料失败:', error);
-            }
-        }
-        
-        // 加载匹配偏好
-        async function loadPreferences() {
-            try {
-                const response = await fetch('/api/match_preferences', {
-                    headers: {
-                        'Authorization': `Bearer ${currentSession}`
-                    }
-                });
-                
-                const data = await response.json();
-                
-                if (data.success && data.preferences) {
-                    const prefs = data.preferences;
-                    
-                    // 填充表单
-                    document.getElementById('preferredGender').value = prefs.preferred_gender || '';
-                    document.getElementById('minAge').value = prefs.min_age || '';
-                    document.getElementById('maxAge').value = prefs.max_age || '';
-                    document.getElementById('minHeight').value = prefs.min_height || '';
-                    document.getElementById('maxHeight').value = prefs.max_height || '';
-                    document.getElementById('dealBreakers').value = prefs.deal_breakers || '';
-                }
-            } catch (error) {
-                console.error('加载匹配偏好失败:', error);
-            }
-        }
-        
-        // 加载推送列表
-        async function loadPushes() {
-            try {
-                const response = await fetch('/api/daily_pushes', {
-                    headers: {
-                        'Authorization': `Bearer ${currentSession}`
-                    }
-                });
-                
-                const data = await response.json();
-                const contentEl = document.getElementById('pushesContent');
-                
-                if (data.success) {
-                    if (data.pushes.length > 0) {
-                        contentEl.innerHTML = data.pushes.map(push => `
-                            <div class="push-card">
-                                <h3>💌 ${push.user_info.nickname}</h3>
-                                <div class="info-grid">
-                                    <div class="info-item">
-                                        <strong>年龄</strong>
-                                        <span>${push.user_info.age || '未知'}</span>
-                                    </div>
-                                    <div class="info-item">
-                                        <strong>性别</strong>
-                                        <span>${getGenderText(push.user_info.gender)}</span>
-                                    </div>
-                                    <div class="info-item">
-                                        <strong>身高</strong>
-                                        <span>${push.user_info.height || '未知'}cm</span>
-                                    </div>
-                                    <div class="info-item">
-                                        <strong>教育</strong>
-                                        <span>${getEducationText(push.user_info.education)}</span>
-                                    </div>
-                                </div>
-                                ${push.user_info.hobbies ? `<p><strong>兴趣爱好：</strong>${push.user_info.hobbies}</p>` : ''}
-                                ${push.user_info.bio ? `<p><strong>个人简介：</strong>${push.user_info.bio}</p>` : ''}
-                                
-                                <div style="margin: 15px 0;">
-                                    <label style="font-weight: normal; display: flex; align-items: center; margin-bottom: 10px;">
-                                        <input type="checkbox" id="secure_match_${push.push_id}" style="margin-right: 8px;">
-                                        🔒 启用安全匹配模式
-                                    </label>
-                                    <small style="color: #666; margin-left: 24px;">
-                                        安全匹配模式下，双方的选择和联系方式都将被加密保护，只有匹配成功才能交换联系方式
-                                    </small>
-                                </div>
-                                
-                                <div class="push-actions">
-                                    <button class="btn btn-success" onclick="respondToPush(${push.push_id}, 'accepted')">💕 接受</button>
-                                    <button class="btn btn-secondary" onclick="respondToPush(${push.push_id}, 'rejected')">❌ 拒绝</button>
-                                </div>
-                            </div>
-                        `).join('');
-                    } else {
-                        contentEl.innerHTML = `
-                            <div class="empty-state">
-                                <h3>😴 今日暂无推送</h3>
-                                <p>点击"生成新推送"按钮获取匹配对象</p>
-                            </div>
-                        `;
-                    }
-                } else {
-                    contentEl.innerHTML = `
-                        <div class="alert alert-warning">${data.message}</div>
-                    `;
-                }
-            } catch (error) {
-                console.error('加载推送失败:', error);
-                contentEl.innerHTML = `
-                    <div class="alert alert-error">加载失败: ${error.message}</div>
-                `;
-            }
-        }
-        
-        // 加载匹配列表
-        async function loadMatches() {
-            try {
-                const response = await fetch('/api/my_matches', {
-                    headers: {
-                        'Authorization': `Bearer ${currentSession}`
-                    }
-                });
-                
-                const data = await response.json();
-                const contentEl = document.getElementById('matchesContent');
-                
-                if (data.success) {
-                    if (data.matches.length > 0) {
-                        contentEl.innerHTML = data.matches.map(match => `
-                            <div class="match-card">
-                                <h3>💕 ${match.matched_user.nickname}</h3>
-                                <div class="info-grid">
-                                    <div class="info-item">
-                                        <strong>年龄</strong>
-                                        <span>${match.matched_user.age || '未知'}</span>
-                                    </div>
-                                    <div class="info-item">
-                                        <strong>性别</strong>
-                                        <span>${getGenderText(match.matched_user.gender)}</span>
-                                    </div>
-                                    <div class="info-item">
-                                        <strong>匹配日期</strong>
-                                        <span>${match.match_date}</span>
-                                    </div>
-                                </div>
-                                ${match.matched_user.bio ? `<p><strong>个人简介：</strong>${match.matched_user.bio}</p>` : ''}
-                                ${match.matched_user.contact_info ? `<p><strong>联系方式：</strong>${match.matched_user.contact_info}</p>` : ''}
-                            </div>
-                        `).join('');
-                    } else {
-                        contentEl.innerHTML = `
-                            <div class="empty-state">
-                                <h3>💔 暂无匹配</h3>
-                                <p>继续浏览推送，寻找你的另一半吧！</p>
-                            </div>
-                        `;
-                    }
-                } else {
-                    contentEl.innerHTML = `
-                        <div class="alert alert-error">加载失败: ${data.error}</div>
-                    `;
-                }
-            } catch (error) {
-                console.error('加载匹配失败:', error);
-                contentEl.innerHTML = `
-                    <div class="alert alert-error">加载失败: ${error.message}</div>
-                `;
-            }
-        }
-        
-        // 保存个人资料
-        document.getElementById('profileForm').addEventListener('submit', async function(e) {
-            e.preventDefault();
-            
-            const formData = new FormData(this);
-            const profileData = Object.fromEntries(formData);
-            
-            // 转换数值类型
-            if (profileData.age) profileData.age = parseInt(profileData.age);
-            if (profileData.height) profileData.height = parseInt(profileData.height);
-            if (profileData.weight) profileData.weight = parseFloat(profileData.weight);
-            
-            try {
-                const response = await fetch('/api/update_profile', {
+                const response = await fetch('/api/validate_session', {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${currentSession}`
-                    },
-                    body: JSON.stringify(profileData)
-                });
-                
-                const data = await response.json();
-                
-                if (data.success) {
-                    alert('✅ 个人资料更新成功！');
-                    await loadStats();
-                    if (data.profile_complete) {
-                        await loadDashboard();
-                    }
-                } else {
-                    alert('❌ 更新失败: ' + data.error);
-                }
-            } catch (error) {
-                alert('❌ 更新失败: ' + error.message);
-            }
-        });
-        
-        // 保存匹配偏好
-        document.getElementById('preferencesForm').addEventListener('submit', async function(e) {
-            e.preventDefault();
-            
-            const formData = new FormData(this);
-            const prefsData = Object.fromEntries(formData);
-            
-            // 转换数值类型
-            if (prefsData.min_age) prefsData.min_age = parseInt(prefsData.min_age);
-            if (prefsData.max_age) prefsData.max_age = parseInt(prefsData.max_age);
-            if (prefsData.min_height) prefsData.min_height = parseInt(prefsData.min_height);
-            if (prefsData.max_height) prefsData.max_height = parseInt(prefsData.max_height);
-            
-            try {
-                const response = await fetch('/api/match_preferences', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${currentSession}`
-                    },
-                    body: JSON.stringify(prefsData)
-                });
-                
-                const data = await response.json();
-                
-                if (data.success) {
-                    alert('✅ 匹配偏好保存成功！');
-                } else {
-                    alert('❌ 保存失败: ' + data.error);
-                }
-            } catch (error) {
-                alert('❌ 保存失败: ' + error.message);
-            }
-        });
-        
-        // 生成新推送
-        async function generatePushes() {
-            try {
-                const response = await fetch('/api/generate_pushes', {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${currentSession}`
-                    }
-                });
-                
-                const data = await response.json();
-                
-                if (data.success) {
-                    alert(`✅ ${data.message}`);
-                    await loadStats();
-                    await loadPushes();
-                } else {
-                    alert('❌ ' + data.message);
-                }
-            } catch (error) {
-                alert('❌ 生成失败: ' + error.message);
-            }
-        }
-        
-        // 响应推送
-        async function respondToPush(pushId, response) {
-            try {
-                const apiResponse = await fetch('/api/respond_push', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${currentSession}`
+                        'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
-                        push_id: pushId,
-                        response: response
+                        username: session.username,
+                        token: session.token
                     })
                 });
-                
-                const data = await apiResponse.json();
-                
-                if (data.success) {
-                    if (data.matched) {
-                        alert('🎉 恭喜！匹配成功！');
-                        await loadMatches();
-                    } else {
-                        alert('✅ ' + data.message);
-                    }
-                    
-                    await loadStats();
-                    await loadPushes();
-                } else {
-                    alert('❌ ' + data.message);
-                }
+
+                const result = await response.json();
+                return result.valid;
             } catch (error) {
-                alert('❌ 操作失败: ' + error.message);
+                console.error('Session验证失败:', error);
+                return false;
             }
         }
-        
-        // 登出
-        async function logout() {
-            if (!confirm('确定要登出吗？')) return;
-            
+
+        // 加载用户信息
+        async function loadUserInfo() {
             try {
-                await secureElgamal.logout();
-                alert('登出成功！');
-                window.location.href = '/';
+                const userInfo = await elgamal.getUserInfo();
+                document.getElementById('userInfo').innerHTML = `
+                    <div class="user-info-grid">
+                        <div class="user-info-item">
+                            <strong><i class="fas fa-user"></i> 用户名</strong>
+                            ${userInfo.username || '未设置'}
+                        </div>
+                        <div class="user-info-item">
+                            <strong><i class="fas fa-signature"></i> 姓名</strong>
+                            ${userInfo.name || '未设置'}
+                        </div>
+                        <div class="user-info-item">
+                            <strong><i class="fas fa-birthday-cake"></i> 年龄</strong>
+                            ${userInfo.age || '未设置'}
+                        </div>
+                        <div class="user-info-item">
+                            <strong><i class="fas fa-venus-mars"></i> 性别</strong>
+                            ${userInfo.gender || '未设置'}
+                        </div>
+                        <div class="user-info-item">
+                            <strong><i class="fas fa-heart"></i> 兴趣</strong>
+                            ${userInfo.interests || '未设置'}
+                        </div>
+                        <div class="user-info-item">
+                            <strong><i class="fas fa-user-circle"></i> 简介</strong>
+                            ${userInfo.bio || '未设置'}
+                        </div>
+                    </div>
+                `;
             } catch (error) {
-                console.error('登出失败:', error);
-                // 即使失败也跳转到登录页面
-                window.location.href = '/';
+                console.error('加载用户信息失败:', error);
+                document.getElementById('userInfo').innerHTML = `
+                    <div class="alert alert-danger alert-custom">
+                        <i class="fas fa-exclamation-triangle"></i> 加载用户信息失败
+                    </div>
+                `;
             }
         }
-        
-        // 辅助函数
-        function getFieldName(field) {
-            const fieldNames = {
-                'nickname': '昵称',
-                'age': '年龄',
-                'gender': '性别',
-                'bio': '个人简介'
-            };
-            return fieldNames[field] || field;
+
+        // 加载联系方式
+        function loadContactInfo() {
+            const saved = localStorage.getItem('user_contact_info');
+            if (saved) {
+                userContactInfo = saved;
+                document.getElementById('contactInfo').value = saved;
+                document.getElementById('contactStatus').innerHTML = 
+                    '<span class="text-success">✓ 联系方式已保存</span>';
+            }
         }
-        
-        function getGenderText(gender) {
-            const genderMap = {
-                'male': '男',
-                'female': '女',
-                'other': '其他'
-            };
-            return genderMap[gender] || '未知';
+
+        // 保存联系方式
+        function saveContactInfo() {
+            const contactInfo = document.getElementById('contactInfo').value.trim();
+            if (!contactInfo) {
+                alert('请输入联系方式');
+                return;
+            }
+            
+            userContactInfo = contactInfo;
+            localStorage.setItem('user_contact_info', contactInfo);
+            document.getElementById('contactStatus').innerHTML = `
+                <div class="alert alert-success alert-custom">
+                    <i class="fas fa-check-circle"></i> 联系方式已保存到本地
+                </div>
+            `;
         }
-        
-        function getEducationText(education) {
-            const educationMap = {
-                'bachelor': '本科',
-                'master': '硕士',
-                'phd': '博士',
-                'other': '其他'
-            };
-            return educationMap[education] || '未知';
+
+        // 加载每日推送
+        async function loadDailyPushes() {
+            try {
+                const pushes = await fheMatching.getDailyPushes();
+                currentPushes = pushes;
+                
+                if (pushes.length === 0) {
+                    document.getElementById('dailyPushes').innerHTML = `
+                        <div class="text-center text-muted">
+                            <i class="fas fa-search fa-2x"></i>
+                            <p class="mt-2">暂无推送</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                let html = '';
+                pushes.forEach(push => {
+                    html += `
+                        <div class="matching-card" data-push-id="${push.push_id}">
+                            <div class="row align-items-center">
+                                <div class="col-md-8">
+                                    <h6><i class="fas fa-user"></i> ${push.profile.name || push.target_user}</h6>
+                                    <div class="user-info-grid">
+                                        <div><strong>年龄:</strong> ${push.profile.age || '未设置'}</div>
+                                        <div><strong>性别:</strong> ${push.profile.gender || '未设置'}</div>
+                                        <div><strong>兴趣:</strong> ${push.profile.interests || '未设置'}</div>
+                                        <div><strong>简介:</strong> ${push.profile.bio || '未设置'}</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4 text-center">
+                                    <p><small><i class="fas fa-at"></i> ${push.target_user}</small></p>
+                                    <div class="d-flex gap-2 justify-content-center">
+                                        <button class="btn btn-success custom-btn btn-sm" 
+                                                onclick="makeChoice('${push.target_user}', ${push.public_key}, true)">
+                                            <i class="fas fa-heart"></i> 接受
+                                        </button>
+                                        <button class="btn btn-danger custom-btn btn-sm" 
+                                                onclick="makeChoice('${push.target_user}', ${push.public_key}, false)">
+                                            <i class="fas fa-times"></i> 拒绝
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                document.getElementById('dailyPushes').innerHTML = html;
+            } catch (error) {
+                console.error('加载推送失败:', error);
+                document.getElementById('dailyPushes').innerHTML = `
+                    <div class="alert alert-danger alert-custom">
+                        <i class="fas fa-exclamation-triangle"></i> 加载推送失败
+                    </div>
+                `;
+            }
+        }
+
+        // 用户做出选择
+        async function makeChoice(targetUser, targetPublicKey, choice) {
+            try {
+                if (!userContactInfo) {
+                    alert('请先设置联系方式');
+                    return;
+                }
+
+                // 计算共享密钥
+                const sharedSecret = fheMatching.computeSharedSecret(targetPublicKey);
+                
+                // 加密联系方式
+                const encryptedContact = fheMatching.prepareContactInfo(userContactInfo, sharedSecret);
+                
+                // 加密选择
+                const encryptedChoice = fheMatching.encryptChoice(choice, targetPublicKey);
+                
+                // 提交到服务器
+                await fheMatching.submitChoice(targetUser, encryptedContact, encryptedChoice);
+                
+                alert(`已提交${choice ? '接受' : '拒绝'}选择`);
+                
+                // 刷新状态
+                await refreshMatchingStatus();
+                
+            } catch (error) {
+                console.error('提交选择失败:', error);
+                alert('提交选择失败: ' + error.message);
+            }
+        }
+
+        // 刷新匹配状态
+        async function refreshMatchingStatus() {
+            try {
+                let html = '';
+                const checkedUsers = new Set();
+                
+                // 检查每个推送用户的匹配状态
+                for (const push of currentPushes) {
+                    if (checkedUsers.has(push.target_user)) continue;
+                    checkedUsers.add(push.target_user);
+                    
+                    const status = await fheMatching.getMatchingStatus(push.target_user);
+                    
+                    if (status.has_result) {
+                        // 解密结果
+                        const result = fheMatching.decryptResult(status.result_product);
+                        const isMatched = result === 1;
+                        
+                        html += `
+                            <div class="matching-card">
+                                <div class="row align-items-center">
+                                    <div class="col-md-6">
+                                        <h6><i class="fas fa-user"></i> 与 ${push.target_user} 的匹配</h6>
+                                        <span class="status-indicator ${isMatched ? 'status-matched' : 'status-rejected'}">
+                                            <i class="fas fa-${isMatched ? 'check' : 'times'}"></i>
+                                            ${isMatched ? '匹配成功' : '匹配失败'}
+                                        </span>
+                                        ${status.is_fake ? '<small class="text-muted d-block mt-1"><i class="fas fa-clock"></i> （等待对方选择中...）</small>' : ''}
+                                    </div>
+                                    <div class="col-md-6 text-center">
+                                        ${isMatched && !status.is_fake ? `
+                                            <button class="btn btn-primary custom-btn btn-sm" 
+                                                    onclick="revealContact('${push.target_user}', ${push.public_key})">
+                                                <i class="fas fa-eye"></i> 查看联系方式
+                                            </button>
+                                        ` : ''}
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    }
+                }
+                
+                if (html === '') {
+                    html = `
+                        <div class="text-center text-muted">
+                            <i class="fas fa-search fa-2x"></i>
+                            <p class="mt-2">暂无匹配状态</p>
+                        </div>
+                    `;
+                }
+                
+                document.getElementById('matchingStatus').innerHTML = html;
+                
+            } catch (error) {
+                console.error('刷新匹配状态失败:', error);
+                document.getElementById('matchingStatus').innerHTML = `
+                    <div class="alert alert-danger alert-custom">
+                        <i class="fas fa-exclamation-triangle"></i> 获取匹配状态失败
+                    </div>
+                `;
+            }
+        }
+
+        // 查看联系方式
+        async function revealContact(targetUser, targetPublicKey) {
+            try {
+                const status = await fheMatching.getMatchingStatus(targetUser);
+                if (!status.has_result || status.is_fake) {
+                    alert('匹配结果不可用');
+                    return;
+                }
+                
+                // 计算共享密钥
+                const sharedSecret = fheMatching.computeSharedSecret(targetPublicKey);
+                
+                // 解密对方的联系方式
+                const contactInfo = fheMatching.decryptContactInfo(status.contact_b_encrypted, sharedSecret);
+                
+                alert(`${targetUser} 的联系方式: ${contactInfo}`);
+                
+            } catch (error) {
+                console.error('获取联系方式失败:', error);
+                alert('获取联系方式失败: ' + error.message);
+            }
+        }
+
+        // 刷新推送
+        async function refreshPushes() {
+            await loadDailyPushes();
+        }
+
+        // 显示个人资料模态框
+        function showProfileModal() {
+            const modal = new bootstrap.Modal(document.getElementById('profileModal'));
+            modal.show();
+        }
+
+        // 更新个人资料
+        async function updateProfile() {
+            try {
+                const profileData = {
+                    name: document.getElementById('profileName').value,
+                    age: parseInt(document.getElementById('profileAge').value),
+                    gender: document.getElementById('profileGender').value,
+                    interests: document.getElementById('profileInterests').value,
+                    bio: document.getElementById('profileBio').value
+                };
+
+                await elgamal.updateProfile(profileData);
+                alert('资料更新成功');
+                
+                const modal = bootstrap.Modal.getInstance(document.getElementById('profileModal'));
+                modal.hide();
+                
+                await loadUserInfo();
+                
+            } catch (error) {
+                console.error('更新资料失败:', error);
+                alert('更新资料失败: ' + error.message);
+            }
+        }
+
+        // 退出登录
+        async function logout() {
+            try {
+                await elgamal.logout();
+                window.location.href = '/';
+            } catch (error) {
+                console.error('退出登录失败:', error);
+                // 即使失败也跳转到登录页
+                window.location.href = '/';
+            }
         }
     </script>
 </body>

@@ -483,182 +483,30 @@
             resultDiv.innerHTML = '<div class="loading">正在注册账户，请稍等...</div>';
             
             try {
+                // 使用正确的API端点进行注册
                 const result = await secureElgamal.register(username, seed);
                 
-                resultDiv.innerHTML = `
-                    <div class="success">✅ 注册成功！</div>
-                    <div class="info">
-                        <strong>重要：请保存以下信息</strong><br><br>
-                        <strong>用户名:</strong> ${username}<br>
-                        <strong>密码种子:</strong> ${seed}<br><br>
-                        💡 <strong>提示:</strong> 请牢记您的用户名和密码种子，这是您登录的唯一凭证
-                    </div>
-                `;
-                
-            } catch (error) {
-                resultDiv.innerHTML = `<div class="error">❌ 注册失败: ${error.message}</div>`;
-            }
-        }
-        
-        // 登录成功后显示用户信息
-        async function showUserDashboard(result) {
-            const container = document.querySelector('.container');
-            container.innerHTML = `
-                <div class="left-panel">
-                    <h1>🎉 登录成功</h1>
-                    <p>欢迎使用零知识证明登录系统！</p>
-                    <br>
-                    <p>✅ Session已建立<br>
-                    🔒 24小时有效期<br>
-                </div>
-                
-                <div class="right-panel">
-                    <div class="user-header">
-                        <p>当前用户: <strong>${result.user_info.username}</strong></p>
-                        <p>Session ID: <span class="session-id">${result.session_id.substring(0, 16)}...</span></p>
-                    </div>
-                    
-                    <div class="user-actions">
-                        <button class="btn" onclick="loadUserInfo()">获取用户信息</button>
-                        <button class="btn" onclick="gotodashboard()">进入系统</button>
-                        <button class="btn btn-secondary" onclick="validateCurrentSession()">验证Session</button>
-                        <button class="btn btn-danger" onclick="logoutUser()">登出</button>
-                    </div>
-                    
-                    <div id="userContent"></div>
-                    
-                    <div class="session-info">
-                        <h4>Session信息</h4>
-                        <p><strong>Session ID:</strong> ${result.session_id}</p>
-                        <p><strong>创建时间:</strong> ${new Date().toLocaleString()}</p>
-                        <p><strong>有效期:</strong> 24小时</p>
-                        <button class="btn copy-btn" onclick="copyToClipboard('${result.session_id}')">复制Session ID</button>
-                    </div>
-                </div>
-            `;
-        }
-        
-        function gotodashboard() {
-            // 跳转到匹配系统主页面
-            window.location.href = '/dashboard';
-        }
-        
-        // 加载用户信息
-        async function loadUserInfo() {
-            const contentDiv = document.getElementById('userContent');
-            contentDiv.innerHTML = '<div class="loading">正在获取用户信息...</div>';
-            
-            try {
-                const userInfo = await secureElgamal.getUserInfo();
-                contentDiv.innerHTML = `
-                    <div class="success">
-                        <h4>用户信息</h4>
-                        <p><strong>用户名:</strong> ${userInfo.username}</p>
-                        <p><strong>昵称:</strong> ${userInfo.nickname || '未设置'}</p>
-                        <p><strong>年龄:</strong> ${userInfo.age || '未设置'}</p>
-                        <p><strong>联系方式:</strong> ${userInfo.contact_info || '未设置'}</p>
-                        <p><strong>个人信息:</strong> ${userInfo.personal_info || '未设置'}</p>
-                    </div>
-                `;
-            } catch (error) {
-                contentDiv.innerHTML = `<div class="error">❌ ${error.message}</div>`;
-            }
-        }
-        
-        // 显示更新资料表单
-        function showUpdateProfile() {
-            const contentDiv = document.getElementById('userContent');
-            contentDiv.innerHTML = `
-                <div class="form-section">
-                    <h4>更新用户资料</h4>
-                    <div class="form-group">
-                        <label for="updateNickname">昵称</label>
-                        <input type="text" id="updateNickname" placeholder="输入昵称">
-                    </div>
-                    <div class="form-group">
-                        <label for="updateAge">年龄</label>
-                        <input type="number" id="updateAge" placeholder="输入年龄">
-                    </div>
-                    <div class="form-group">
-                        <label for="updateContact">联系方式</label>
-                        <input type="text" id="updateContact" placeholder="输入联系方式">
-                    </div>
-                    <div class="form-group">
-                        <label for="updatePersonal">个人信息</label>
-                        <textarea id="updatePersonal" placeholder="输入个人信息"></textarea>
-                    </div>
-                    <button class="btn" onclick="updateUserProfile()">保存更新</button>
-                </div>
-            `;
-        }
-        
-        // 更新用户资料
-        async function updateUserProfile() {
-            const profileData = {
-                nickname: document.getElementById('updateNickname').value.trim(),
-                age: parseInt(document.getElementById('updateAge').value) || null,
-                contact_info: document.getElementById('updateContact').value.trim(),
-                personal_info: document.getElementById('updatePersonal').value.trim()
-            };
-            
-            // 移除空值
-            Object.keys(profileData).forEach(key => {
-                if (profileData[key] === '' || profileData[key] === null) {
-                    delete profileData[key];
-                }
-            });
-            
-            if (Object.keys(profileData).length === 0) {
-                document.getElementById('userContent').innerHTML += '<div class="error">请至少填写一个字段</div>';
-                return;
-            }
-            
-            try {
-                const result = await secureElgamal.updateProfile(profileData);
-                document.getElementById('userContent').innerHTML = `
-                    <div class="success">✅ ${result.message}</div>
-                `;
-                // 自动刷新用户信息
-                setTimeout(() => loadUserInfo(), 1000);
-            } catch (error) {
-                document.getElementById('userContent').innerHTML += `<div class="error">❌ ${error.message}</div>`;
-            }
-        }
-        
-        // 验证当前session
-        async function validateCurrentSession() {
-            const contentDiv = document.getElementById('userContent');
-            contentDiv.innerHTML = '<div class="loading">正在验证Session...</div>';
-            
-            try {
-                const isValid = await secureElgamal.validateSession();
-                if (isValid) {
-                    contentDiv.innerHTML = '<div class="success">✅ Session有效，认证状态正常</div>';
+                if (result.success) {
+                    resultDiv.innerHTML = `
+                        <div class="success">✅ 注册成功！</div>
+                        <div class="info">
+                            <strong>重要：请保存以下信息</strong><br><br>
+                            <strong>用户名:</strong> ${username}<br>
+                            <strong>密码种子:</strong> ${seed}<br><br>
+                            💡 <strong>提示:</strong> 请牢记您的用户名和密码种子，这是您登录的唯一凭证
+                        </div>
+                    `;
                 } else {
-                    contentDiv.innerHTML = '<div class="error">❌ Session已失效，请重新登录</div>';
-                    setTimeout(() => location.reload(), 2000);
+                    resultDiv.innerHTML = `<div class="error">❌ 注册失败: ${result.message || '未知错误'}</div>`;
                 }
+                
             } catch (error) {
-                contentDiv.innerHTML = `<div class="error">❌ 验证失败: ${error.message}</div>`;
+                console.error('注册错误:', error);
+                resultDiv.innerHTML = `<div class="error">❌ 注册失败: ${error.message || '网络错误或服务器错误'}</div>`;
             }
         }
         
-        // 用户登出
-        async function logoutUser() {
-            if (!confirm('确定要登出吗？')) return;
-            
-            try {
-                await secureElgamal.logout();
-                alert('登出成功！');
-                location.reload();
-            } catch (error) {
-                alert(`登出失败: ${error.message}`);
-                // 即使失败也重新加载页面，因为本地session已清除
-                location.reload();
-            }
-        }
-        
-        // 显示用户控制面板
+        // 用户登录
         async function login() {
             const username = document.getElementById('loginUsername').value.trim();
             const seed = document.getElementById('loginSeed').value.trim();
@@ -674,34 +522,28 @@
             try {
                 const result = await secureElgamal.zkLogin(username, seed);
                 
-                // 登录成功后跳转到匹配系统主页面
-                resultDiv.innerHTML = '<div class="success">✅ 登录成功！正在跳转到匹配系统...</div>';
-                
-                setTimeout(() => {
-                    window.location.href = '/dashboard';
-                }, 1000);
+                if (result.success) {
+                    // 登录成功后跳转到匹配系统主页面
+                    resultDiv.innerHTML = '<div class="success">✅ 登录成功！正在跳转到匹配系统...</div>';
+                    
+                    setTimeout(() => {
+                        window.location.href = '/dashboard';
+                    }, 1000);
+                } else {
+                    resultDiv.innerHTML = `<div class="error">❌ 登录失败: ${result.message || '未知错误'}</div>`;
+                }
                 
             } catch (error) {
-                resultDiv.innerHTML = `<div class="error">❌ ${error.message}</div>`;
+                console.error('登录错误:', error);
+                resultDiv.innerHTML = `<div class="error">❌ 登录失败: ${error.message || '网络错误或服务器错误'}</div>`;
             }
         }
         
-        // 复制到剪贴板
-        async function copyToClipboard(text) {
-            try {
-                await navigator.clipboard.writeText(text);
-                alert('已复制到剪贴板！');
-            } catch (err) {
-                // 回退方法
-                const textArea = document.createElement('textarea');
-                textArea.value = text;
-                document.body.appendChild(textArea);
-                textArea.select();
-                document.execCommand('copy');
-                document.body.removeChild(textArea);
-                alert('已复制到剪贴板！');
-            }
-        }
+        // 用户注册时，生成并复制种子到剪贴板
+        document.getElementById('regSeed').addEventListener('focus', function() {
+            this.select();
+            document.execCommand('copy');
+        });
         
         // 页面加载时的初始化
         document.addEventListener('DOMContentLoaded', async function() {
