@@ -517,18 +517,18 @@
                 return;
             }
             
-            resultDiv.innerHTML = '<div class="loading">正在进行零知识证明登录...</div>';
+            resultDiv.innerHTML = '<div class="loading">正在登录...</div>';
             
             try {
                 const result = await secureElgamal.zkLogin(username, seed);
-                
+                // setTimeout(() => {}, 100000000000); 
                 if (result.success) {
                     // 登录成功后跳转到匹配系统主页面
                     resultDiv.innerHTML = '<div class="success">✅ 登录成功！正在跳转到匹配系统...</div>';
                     
                     setTimeout(() => {
-                        window.location.href = '/dashboard';
-                    }, 1000);
+                       window.location.href = '/dashboard';
+                    }, 2000);
                 } else {
                     resultDiv.innerHTML = `<div class="error">❌ 登录失败: ${result.message || '未知错误'}</div>`;
                 }

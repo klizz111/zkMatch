@@ -1,7 +1,7 @@
-// 安全的ElGamal实现 - 支持零知识证明登录和Session管理
+// 安全的ElGamal实现 
 class SecureElGamal {
-    constructor(bits = 512) {  // 固定为512位
-        this.bits = 512;  // 强制使用512位
+    constructor(bits = 512) {  
+        this.bits = 512;  
         this.p = null;
         this.g = null;
         this.y = null;
@@ -10,12 +10,10 @@ class SecureElGamal {
         this.currentSessionId = null;  // 当前session ID
     }
     
-    // 客户端生成密码/种子 - 生成适合显示的安全种子
+    // 客户端生成密码
     generateSeed() {
-        // 生成32字节随机数据，转换为Base64格式（更短但仍然安全）
-        const array = new Uint8Array(32);  // 32字节 = 256位，足够安全
+        const array = new Uint8Array(32);  // 32字节
         crypto.getRandomValues(array);
-        // 使用Base64编码，去掉填充字符，更紧凑
         return btoa(String.fromCharCode(...array)).replace(/[+/=]/g, '').substring(0, 32);
     }
     
@@ -40,7 +38,7 @@ class SecureElGamal {
         
         if (!response.ok) {
             const error = await response.json();
-            throw new Error(error.error || '注册失败');
+            throw new Error(error.message || '注册失败');
         }
         
         const data = await response.json();
@@ -91,32 +89,6 @@ class SecureElGamal {
         };
     }
     
-    // 登录功能
-    async login(username, password) {
-        try {
-            const response = await fetch('/api/login', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ username, password })
-            });
-
-            const data = await response.json();
-            
-            if (data.success) {
-                // 存储session到localStorage
-                localStorage.setItem('zk_current_session', JSON.stringify(data.session));
-                this.currentSession = data.session;
-                return { success: true, message: data.message };
-            } else {
-                return { success: false, message: data.message };
-            }
-        } catch (error) {
-            console.error('登录请求失败:', error);
-            return { success: false, message: '网络错误，请重试' };
-        }
-    }
 
     // 验证session
     async validateSession() {
@@ -173,6 +145,7 @@ class SecureElGamal {
     
     // 零知识证明登录
     async zkLogin(username, seed) {
+        // console.log('calling zkLogin with username:', username, 'and seed:', seed);
         try {
             // 第一步：获取登录挑战
             const challengeResponse = await fetch('/api/login_challenge', {
@@ -191,6 +164,8 @@ class SecureElGamal {
             }
             
             const challengeData = await challengeResponse.json();
+            // console.log('Challenge Data:', challengeData);
+            // setTimeout(() => {}, 100000000000);
             
             // 设置公钥参数
             this.p = BigInt(challengeData.p);
@@ -225,17 +200,18 @@ class SecureElGamal {
             }
             
             const verifyData = await verifyResponse.json();
+            // console.log('Verify Data:', verifyData); 
             
             // 保存session ID到本地存储和实例中
-            if (verifyData.session_id) {
-                this.currentSessionId = verifyData.session_id;
-                this.saveSessionToLocal(username, verifyData.session_id);
+            if (verifyData.sessionId) {
+                this.currentSessionId = verifyData.sessionId;
+                this.saveSessionToLocal(username, verifyData.sessionId);
             }
             
             return {
                 success: true,
                 message: verifyData.message,
-                session_id: verifyData.session_id,
+                sessionId: verifyData.sessionId,
                 user_info: verifyData.user_info
             };
             
@@ -297,14 +273,21 @@ class SecureElGamal {
     
     // 保存session ID到本地存储
     saveSessionToLocal(username, sessionId) {
+        // console.log('Saving session to local storage:', username, sessionId);
         try {
             const sessionData = {
                 username: username,
                 sessionId: sessionId,
                 timestamp: Date.now()
             };
+            
+            const currentSessionData = {
+                username: username,
+                token: sessionId  
+            };
+            
             localStorage.setItem(`zk_session_${username}`, JSON.stringify(sessionData));
-            localStorage.setItem('zk_current_session', sessionId);
+            localStorage.setItem('zk_current_session', JSON.stringify(currentSessionData));  
             localStorage.setItem('zk_current_user', username);
         } catch (error) {
             console.warn('无法保存session到本地存储:', error);

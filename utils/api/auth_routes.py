@@ -171,6 +171,44 @@ class AuthRoutes:
                 logging.error(f"Logout error: {e}")
                 return jsonify({'success': False, 'message': '退出登录失败'}), 500
         
+        @self.app.route('/api/validate_session', methods=['POST'])
+        def validate_session_api():
+            """验证session API"""
+            try:
+                data = request.get_json()
+                
+                if not data:
+                    return jsonify({'valid': False, 'message': '无效的请求数据'}), 400
+                
+                username = data.get('username')
+                token = data.get('token')
+                
+                if not username or not token:
+                    return jsonify({'valid': False, 'message': '用户名和token不能为空'}), 400
+                
+                db = self._get_db_manager()
+                session_manager = SessionManager(db)
+                
+                # 验证session是否有效
+                validated_username = session_manager.validate_session(token)
+                
+                if validated_username and validated_username == username:
+                    return jsonify({
+                        'valid': True,
+                        'message': 'Session有效',
+                        'username': validated_username
+                    })
+                else:
+                    return jsonify({
+                        'valid': False,
+                        'message': 'Session无效或已过期'
+                    })
+                    
+            except Exception as e:
+                logging.error(f"Validate session API error: {e}")
+                return jsonify({'valid': False, 'message': '验证失败'}), 500
+
+
         @self.app.route('/api/check_session', methods=['GET'])
         def check_session():
             """检查会话状态"""
