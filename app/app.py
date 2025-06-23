@@ -7,7 +7,9 @@ import logging
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from utils.database.dataBase import DatabaseManager
-from utils.api import AuthRoutes, MatchingRoutes, FHEMatchingRoutes
+from utils.api.auth_routes import AuthRoutes
+from utils.api.matching_routes import MatchingRoutes
+from utils.api.fhe_matching_routes import fhe_matching_bp
 
 app = Flask(__name__)
 app.config['DATABASE_PATH'] = 'datastorage.db'
@@ -58,27 +60,22 @@ def index():
 
 @app.route('/dashboard')
 def dashboard():
-    """匹配系统主页面"""
+    """匹配系统主页面（使用FHE同态加密匹配）"""
     return render_template('index.html')
-
-@app.route('/fhe_matching')
-def fhe_matching():
-    """同态加密匹配系统页面"""
-    return render_template('fhe_matching.html')
 
 # 初始化API路由
 def init_api_routes():
     """初始化所有API路由"""
     db_path = app.config['DATABASE_PATH']
     
-    # 初始化认证路由
+    # 初始化认证路由（类方式）
     auth_routes = AuthRoutes(app, db_path)
     
-    # 初始化匹配系统路由，传入认证装饰器
+    # 初始化匹配系统路由（类方式），传入认证装饰器
     matching_routes = MatchingRoutes(app, db_path, auth_routes.require_session)
     
-    # 初始化FHE同态加密匹配路由
-    fhe_matching_routes = FHEMatchingRoutes(app, db_path, auth_routes.require_session)
+    # 注册FHE同态加密匹配路由（Blueprint方式）
+    app.register_blueprint(fhe_matching_bp)
     
     logging.info("API routes initialized successfully")
 
@@ -87,5 +84,5 @@ if __name__ == '__main__':
     init_database()
     init_api_routes()
     
-    logging.info("Starting Flask application...")
+    logging.info("Starting Flask application with FHE matching system...")
     app.run(debug=True)

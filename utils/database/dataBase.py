@@ -174,9 +174,9 @@ class DatabaseManager:
                                 user2_choice_cipher TEXT,
                                 user1_contact_data TEXT,
                                 user2_contact_data TEXT,
-                                user1_responded BOOLEAN DEFAULT 0,
-                                user2_responded BOOLEAN DEFAULT 0,
-                                result_computed BOOLEAN DEFAULT 0,
+                                user1_responded INTEGER DEFAULT 0,
+                                user2_responded INTEGER DEFAULT 0,
+                                result_computed INTEGER DEFAULT 0,
                                 result_cipher TEXT,
                                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                                 FOREIGN KEY (user1_id) REFERENCES user_data(username),
@@ -189,17 +189,15 @@ class DatabaseManager:
                                 """id INTEGER PRIMARY KEY AUTOINCREMENT,
                                 session_key TEXT NOT NULL,
                                 user_id TEXT NOT NULL,
-                                is_match BOOLEAN,
+                                result_cipher TEXT,
+                                contact_key_cipher TEXT,
+                                contact_encrypted TEXT,
+                                is_match INTEGER,
                                 contact_info TEXT,
                                 decrypted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                                 FOREIGN KEY (session_key) REFERENCES fhe_match_sessions(session_key),
                                 FOREIGN KEY (user_id) REFERENCES user_data(username)"""
                 )
-                
-                # 原有的推送记录表修改，添加安全匹配支持
-                self.execute_custom_sql("""
-                    ALTER TABLE push_records ADD COLUMN fhe_session_key TEXT;
-                """)
                 
                 # account_data中添加root用户，将root的p,g,q,y设置为系统全局的群参数
                 elgamal = ElGamal(bits=512)

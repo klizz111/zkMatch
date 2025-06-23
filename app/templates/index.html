@@ -25,7 +25,6 @@
                     <li><a href="#" onclick="showSection('preferences')">⚙️ 匹配偏好</a></li>
                     <li><a href="#" onclick="showSection('pushes')">💌 今日推送</a></li>
                     <li><a href="#" onclick="showSection('matches')">💕 我的匹配</a></li>
-                    <li><a href="/fhe_matching" class="nav-link" style="background: linear-gradient(45deg, #4CAF50, #45a049); color: white; border-radius: 8px; margin: 5px 0;">🔒 同态加密匹配</a></li>
                 </ul>
                 
                 <div class="stats-grid">
@@ -194,10 +193,13 @@
     </div>
 
     <script src="{{ url_for('static', filename='js/secureElgamal.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/fheMatching.js') }}"></script>
     <script>
-        let secureElgamal = new SecureElGamal(256);
+        let secureElgamal = new SecureElgamal(256);
         let currentUser = null;
         let currentSession = null;
+        let fheMatching = null;
+        let pendingChoices = new Map(); // 存储待处理的选择
         
         // 页面加载时初始化
         document.addEventListener('DOMContentLoaded', async function() {
@@ -220,6 +222,10 @@
                 currentUser = session.username;
                 currentSession = session.sessionId;
                 
+                // 初始化FHE匹配系统
+                fheMatching = window.fheMatching;
+                await fheMatching.init();
+                
                 // 更新用户信息显示
                 document.getElementById('currentUser').textContent = `欢迎，${currentUser}`;
                 
@@ -227,12 +233,89 @@
                 await loadStats();
                 await loadDashboard();
                 
+                // 绑定表单事件监听器 - 确保在currentSession初始化后执行
+                initializeFormHandlers();
+                
             } catch (error) {
                 console.error('初始化失败:', error);
                 alert('初始化失败，请重新登录');
                 window.location.href = '/';
             }
         });
+
+        // 初始化表单处理器
+        function initializeFormHandlers() {
+            // 个人资料表单提交
+            document.getElementById('profileForm').addEventListener('submit', async function(e) {
+                e.preventDefault();
+                
+                try {
+                    if (!currentSession) {
+                        alert('会话未初始化，请重新登录');
+                        return;
+                    }
+                    
+                    const formData = new FormData(this);
+                    const profileData = Object.fromEntries(formData.entries());
+                    
+                    const response = await fetch('/api/update_profile', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${currentSession}`
+                        },
+                        body: JSON.stringify(profileData)
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        alert('✅ 个人资料更新成功！');
+                        await loadDashboard(); // 重新加载仪表板检查资料完整性
+                    } else {
+                        alert(`❌ 更新失败: ${data.error}`);
+                    }
+                } catch (error) {
+                    console.error('更新个人资料失败:', error);
+                    alert(`❌ 更新失败: ${error.message}`);
+                }
+            });
+            
+            // 匹配偏好表单提交
+            document.getElementById('preferencesForm').addEventListener('submit', async function(e) {
+                e.preventDefault();
+                
+                try {
+                    if (!currentSession) {
+                        alert('会话未初始化，请重新登录');
+                        return;
+                    }
+                    
+                    const formData = new FormData(this);
+                    const preferencesData = Object.fromEntries(formData.entries());
+                    
+                    const response = await fetch('/api/update_preferences', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${currentSession}`
+                        },
+                        body: JSON.stringify(preferencesData)
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        alert('✅ 匹配偏好更新成功！');
+                    } else {
+                        alert(`❌ 更新失败: ${data.error}`);
+                    }
+                } catch (error) {
+                    console.error('更新匹配偏好失败:', error);
+                    alert(`❌ 更新失败: ${error.message}`);
+                }
+            });
+        }
         
         // 显示不同的部分
         function showSection(sectionName) {
@@ -280,6 +363,11 @@
         // 加载统计数据
         async function loadStats() {
             try {
+                if (!currentSession) {
+                    console.warn('Session 未初始化，跳过统计数据加载');
+                    return;
+                }
+                
                 const response = await fetch('/api/stats', {
                     headers: {
                         'Authorization': `Bearer ${currentSession}`
@@ -304,6 +392,14 @@
         // 加载仪表板
         async function loadDashboard() {
             try {
+                if (!currentSession) {
+                    console.warn('Session 未初始化，跳过仪表板加载');
+                    document.getElementById('dashboardContent').innerHTML = `
+                        <div class="alert alert-warning">会话未初始化，请重新登录</div>
+                    `;
+                    return;
+                }
+                
                 // 检查资料完整性
                 const profileResponse = await fetch('/api/profile_status', {
                     headers: {
@@ -347,6 +443,11 @@
         // 加载推送预览
         async function loadPushesPreview() {
             try {
+                if (!currentSession) {
+                    console.warn('Session 未初始化，跳过推送预览加载');
+                    return;
+                }
+                
                 const response = await fetch('/api/daily_pushes', {
                     headers: {
                         'Authorization': `Bearer ${currentSession}`
@@ -407,6 +508,11 @@
         // 加载个人资料
         async function loadProfile() {
             try {
+                if (!currentSession) {
+                    console.warn('Session 未初始化，跳过个人资料加载');
+                    return;
+                }
+                
                 const response = await fetch('/api/profile_status', {
                     headers: {
                         'Authorization': `Bearer ${currentSession}`
@@ -437,6 +543,11 @@
         // 加载匹配偏好
         async function loadPreferences() {
             try {
+                if (!currentSession) {
+                    console.warn('Session 未初始化，跳过匹配偏好加载');
+                    return;
+                }
+                
                 const response = await fetch('/api/match_preferences', {
                     headers: {
                         'Authorization': `Bearer ${currentSession}`
@@ -461,7 +572,7 @@
             }
         }
         
-        // 加载推送列表
+        // 加载推送列表（使用FHE匹配）
         async function loadPushes() {
             try {
                 const response = await fetch('/api/daily_pushes', {
@@ -476,7 +587,7 @@
                 if (data.success) {
                     if (data.pushes.length > 0) {
                         contentEl.innerHTML = data.pushes.map(push => `
-                            <div class="push-card">
+                            <div class="push-card" id="push_${push.session_key}">
                                 <h3>💌 ${push.user_info.nickname}</h3>
                                 <div class="info-grid">
                                     <div class="info-item">
@@ -499,20 +610,21 @@
                                 ${push.user_info.hobbies ? `<p><strong>兴趣爱好：</strong>${push.user_info.hobbies}</p>` : ''}
                                 ${push.user_info.bio ? `<p><strong>个人简介：</strong>${push.user_info.bio}</p>` : ''}
                                 
-                                <div style="margin: 15px 0;">
-                                    <label style="font-weight: normal; display: flex; align-items: center; margin-bottom: 10px;">
-                                        <input type="checkbox" id="secure_match_${push.push_id}" style="margin-right: 8px;">
-                                        🔒 启用安全匹配模式
-                                    </label>
-                                    <small style="color: #666; margin-left: 24px;">
-                                        安全匹配模式下，双方的选择和联系方式都将被加密保护，只有匹配成功才能交换联系方式
+                                <div class="fhe-info" style="margin: 15px 0; padding: 10px; background: #f8f9fa; border-radius: 8px;">
+                                    <p><strong>🔒 安全匹配模式</strong></p>
+                                    <small style="color: #666;">
+                                        使用同态加密技术保护您的选择和联系方式，只有双方都接受时才会交换联系方式。
+                                        系统无法知道您的具体选择内容。
                                     </small>
                                 </div>
                                 
                                 <div class="push-actions">
-                                    <button class="btn btn-success" onclick="respondToPush(${push.push_id}, 'accepted')">💕 接受</button>
-                                    <button class="btn btn-secondary" onclick="respondToPush(${push.push_id}, 'rejected')">❌ 拒绝</button>
+                                    <button class="btn btn-success" onclick="handleFHEChoice('${push.session_key}', '${push.target_user}', '${push.target_dh_public}', true)">💕 接受</button>
+                                    <button class="btn btn-secondary" onclick="handleFHEChoice('${push.session_key}', '${push.target_user}', '${push.target_dh_public}', false)">❌ 拒绝</button>
+                                    <button class="btn btn-info" onclick="checkMatchResult('${push.session_key}')" style="margin-left: 10px;">🔍 查看结果</button>
                                 </div>
+                                
+                                <div id="status_${push.session_key}" class="match-status" style="margin-top: 10px;"></div>
                             </div>
                         `).join('');
                     } else {
@@ -535,8 +647,124 @@
                 `;
             }
         }
-        
-        // 加载匹配列表
+
+        // 处理FHE选择
+        async function handleFHEChoice(sessionKey, targetUser, targetDhPublic, choice) {
+            try {
+                const statusEl = document.getElementById(`status_${sessionKey}`);
+                statusEl.innerHTML = '<div class="loading">正在处理您的选择...</div>';
+                
+                // 计算共享密钥
+                fheMatching.computeSharedSecret(targetDhPublic, sessionKey);
+                
+                // 获取用户联系方式
+                const contactInfo = document.getElementById('contact_info').value || '未设置联系方式';
+                
+                // 提交选择
+                await fheMatching.submitChoice(sessionKey, choice, contactInfo);
+                
+                // 存储待处理的选择
+                pendingChoices.set(sessionKey, { choice, targetUser, timestamp: Date.now() });
+                
+                statusEl.innerHTML = `
+                    <div class="alert alert-info">
+                        ✅ 您的选择已提交！${choice ? '已接受此用户' : '已拒绝此用户'}
+                        <br><small>等待对方回应中... 您可以点击"查看结果"按钮检查匹配状态</small>
+                    </div>
+                `;
+                
+                // 禁用按钮
+                const pushCard = document.getElementById(`push_${sessionKey}`);
+                const buttons = pushCard.querySelectorAll('.btn-success, .btn-secondary');
+                buttons.forEach(btn => {
+                    btn.disabled = true;
+                    btn.style.opacity = '0.5';
+                });
+                
+            } catch (error) {
+                console.error('处理选择失败:', error);
+                const statusEl = document.getElementById(`status_${sessionKey}`);
+                statusEl.innerHTML = `<div class="alert alert-error">操作失败: ${error.message}</div>`;
+            }
+        }
+
+        // 检查匹配结果
+        async function checkMatchResult(sessionKey) {
+            try {
+                const statusEl = document.getElementById(`status_${sessionKey}`);
+                statusEl.innerHTML = '<div class="loading">正在获取匹配结果...</div>';
+                
+                // 获取匹配结果
+                const resultData = await fheMatching.getMatchResult(sessionKey);
+                
+                if (!resultData.success) {
+                    statusEl.innerHTML = `<div class="alert alert-error">${resultData.error}</div>`;
+                    return;
+                }
+                
+                const result = resultData.result;
+                
+                // 解密匹配结果
+                const matchResult = fheMatching.decryptResult(result.result_cipher, sessionKey);
+                
+                if (matchResult.isMatch) {
+                    // 匹配成功，尝试解密联系方式
+                    const contactInfo = await fheMatching.decryptContactInfo(
+                        result.contact_key_cipher,
+                        result.contact_encrypted,
+                        sessionKey
+                    );
+                    
+                    if (contactInfo) {
+                        // 保存匹配结果
+                        await fheMatching.saveMatchResult(sessionKey, true, contactInfo);
+                        
+                        statusEl.innerHTML = `
+                            <div class="alert alert-success">
+                                🎉 <strong>匹配成功！</strong>
+                                <br>对方的联系方式：<strong>${contactInfo}</strong>
+                                <br><small>恭喜您找到了匹配的另一半！</small>
+                            </div>
+                        `;
+                        
+                        // 更新匹配列表
+                        await loadMatches();
+                    } else {
+                        statusEl.innerHTML = `
+                            <div class="alert alert-warning">
+                                匹配结果显示成功，但无法解密联系方式。请稍后重试。
+                            </div>
+                        `;
+                    }
+                } else {
+                    // 匹配失败
+                    await fheMatching.saveMatchResult(sessionKey, false);
+                    
+                    if (resultData.result_computed) {
+                        statusEl.innerHTML = `
+                            <div class="alert alert-info">
+                                💔 <strong>匹配失败</strong>
+                                <br><small>很遗憾，您和对方没有相互接受。继续寻找下一个缘分吧！</small>
+                            </div>
+                        `;
+                    } else {
+                        statusEl.innerHTML = `
+                            <div class="alert alert-info">
+                                ⏳ <strong>等待对方回应</strong>
+                                <br><small>对方还未做出选择，请耐心等待...</small>
+                            </div>
+                        `;
+                    }
+                }
+                
+            } catch (error) {
+                console.error('检查匹配结果失败:', error);
+                const statusEl = document.getElementById(`status_${sessionKey}`);
+                statusEl.innerHTML = `<div class="alert alert-error">获取结果失败: ${error.message}</div>`;
+            }
+        }
+
+        // 加载匹配列表（基于FHE结果）
         async function loadMatches() {
             try {
                 const response = await fetch('/api/my_matches', {
@@ -564,18 +792,30 @@
                                     </div>
                                     <div class="info-item">
                                         <strong>匹配日期</strong>
-                                        <span>${match.match_date}</span>
+                                        <span>${new Date(match.match_date).toLocaleDateString()}</span>
                                     </div>
+                                    ${match.is_match !== null ? `
+                                    <div class="info-item">
+                                        <strong>匹配状态</strong>
+                                        <span>${match.is_match ? '✅ 成功' : '❌ 失败'}</span>
+                                    </div>
+                                    ` : ''}
                                 </div>
                                 ${match.matched_user.bio ? `<p><strong>个人简介：</strong>${match.matched_user.bio}</p>` : ''}
-                                ${match.matched_user.contact_info ? `<p><strong>联系方式：</strong>${match.matched_user.contact_info}</p>` : ''}
+                                ${match.contact_info ? `
+                                <div class="contact-info" style="background: #e8f5e8; padding: 10px; border-radius: 8px; margin: 10px 0;">
+                                    <p><strong>🔓 解密的联系方式：</strong><span style="font-family: monospace;">${match.contact_info}</span></p>
+                                    <small style="color: #666;">此联系方式通过同态加密安全解密获得</small>
+                                </div>
+                                ` : ''}
+                                ${match.decrypted_at ? `<small style="color: #888;">解密时间: ${new Date(match.decrypted_at).toLocaleString()}</small>` : ''}
                             </div>
                         `).join('');
                     } else {
                         contentEl.innerHTML = `
                             <div class="empty-state">
                                 <h3>💔 暂无匹配</h3>
-                                <p>继续浏览推送，寻找你的另一半吧！</p>
+                                <p>继续浏览推送，使用安全匹配寻找你的另一半吧！</p>
                             </div>
                         `;
                     }
@@ -591,154 +831,22 @@
                 `;
             }
         }
-        
-        // 保存个人资料
-        document.getElementById('profileForm').addEventListener('submit', async function(e) {
-            e.preventDefault();
-            
-            const formData = new FormData(this);
-            const profileData = Object.fromEntries(formData);
-            
-            // 转换数值类型
-            if (profileData.age) profileData.age = parseInt(profileData.age);
-            if (profileData.height) profileData.height = parseInt(profileData.height);
-            if (profileData.weight) profileData.weight = parseFloat(profileData.weight);
-            
-            try {
-                const response = await fetch('/api/update_profile', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${currentSession}`
-                    },
-                    body: JSON.stringify(profileData)
-                });
-                
-                const data = await response.json();
-                
-                if (data.success) {
-                    alert('✅ 个人资料更新成功！');
-                    await loadStats();
-                    if (data.profile_complete) {
-                        await loadDashboard();
+
+        // 自动检查待处理选择的结果
+        setInterval(async () => {
+            for (const [sessionKey, choiceData] of pendingChoices) {
+                // 如果选择已经提交超过30秒，自动检查结果
+                if (Date.now() - choiceData.timestamp > 30000) {
+                    try {
+                        await checkMatchResult(sessionKey);
+                        pendingChoices.delete(sessionKey); // 移除已处理的选择
+                    } catch (error) {
+                        console.error(`自动检查会话 ${sessionKey} 结果失败:`, error);
                     }
-                } else {
-                    alert('❌ 更新失败: ' + data.error);
                 }
-            } catch (error) {
-                alert('❌ 更新失败: ' + error.message);
             }
-        });
-        
-        // 保存匹配偏好
-        document.getElementById('preferencesForm').addEventListener('submit', async function(e) {
-            e.preventDefault();
-            
-            const formData = new FormData(this);
-            const prefsData = Object.fromEntries(formData);
-            
-            // 转换数值类型
-            if (prefsData.min_age) prefsData.min_age = parseInt(prefsData.min_age);
-            if (prefsData.max_age) prefsData.max_age = parseInt(prefsData.max_age);
-            if (prefsData.min_height) prefsData.min_height = parseInt(prefsData.min_height);
-            if (prefsData.max_height) prefsData.max_height = parseInt(prefsData.max_height);
-            
-            try {
-                const response = await fetch('/api/match_preferences', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${currentSession}`
-                    },
-                    body: JSON.stringify(prefsData)
-                });
-                
-                const data = await response.json();
-                
-                if (data.success) {
-                    alert('✅ 匹配偏好保存成功！');
-                } else {
-                    alert('❌ 保存失败: ' + data.error);
-                }
-            } catch (error) {
-                alert('❌ 保存失败: ' + error.message);
-            }
-        });
-        
-        // 生成新推送
-        async function generatePushes() {
-            try {
-                const response = await fetch('/api/generate_pushes', {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${currentSession}`
-                    }
-                });
-                
-                const data = await response.json();
-                
-                if (data.success) {
-                    alert(`✅ ${data.message}`);
-                    await loadStats();
-                    await loadPushes();
-                } else {
-                    alert('❌ ' + data.message);
-                }
-            } catch (error) {
-                alert('❌ 生成失败: ' + error.message);
-            }
-        }
-        
-        // 响应推送
-        async function respondToPush(pushId, response) {
-            try {
-                const apiResponse = await fetch('/api/respond_push', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${currentSession}`
-                    },
-                    body: JSON.stringify({
-                        push_id: pushId,
-                        response: response
-                    })
-                });
-                
-                const data = await apiResponse.json();
-                
-                if (data.success) {
-                    if (data.matched) {
-                        alert('🎉 恭喜！匹配成功！');
-                        await loadMatches();
-                    } else {
-                        alert('✅ ' + data.message);
-                    }
-                    
-                    await loadStats();
-                    await loadPushes();
-                } else {
-                    alert('❌ ' + data.message);
-                }
-            } catch (error) {
-                alert('❌ 操作失败: ' + error.message);
-            }
-        }
-        
-        // 登出
-        async function logout() {
-            if (!confirm('确定要登出吗？')) return;
-            
-            try {
-                await secureElgamal.logout();
-                alert('登出成功！');
-                window.location.href = '/';
-            } catch (error) {
-                console.error('登出失败:', error);
-                // 即使失败也跳转到登录页面
-                window.location.href = '/';
-            }
-        }
-        
+        }, 15000); // 每15秒检查一次
+
         // 辅助函数
         function getFieldName(field) {
             const fieldNames = {
@@ -767,6 +875,54 @@
                 'other': '其他'
             };
             return educationMap[education] || '未知';
+        }
+        
+        // 生成新推送
+        async function generatePushes() {
+            try {
+                if (!currentSession) {
+                    alert('会话未初始化，请重新登录');
+                    return;
+                }
+                
+                const response = await fetch('/api/generate_pushes', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${currentSession}`
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    alert(`✅ 成功生成 ${data.count} 个新推送！`);
+                    await loadPushes();
+                    await loadStats();
+                } else {
+                    alert(`❌ 生成推送失败: ${data.error}`);
+                }
+            } catch (error) {
+                console.error('生成推送失败:', error);
+                alert(`❌ 生成推送失败: ${error.message}`);
+            }
+        }
+        
+        // 用户登出
+        async function logout() {
+            if (!confirm('确定要登出吗？')) return;
+            
+            try {
+                await secureElgamal.logout();
+                alert('✅ 登出成功');
+                window.location.href = '/';
+            } catch (error) {
+                console.error('登出失败:', error);
+                alert(`❌ 登出失败: ${error.message}`);
+                // 即使服务器端登出失败，也清除本地存储
+                secureElgamal.clearSessionFromLocal();
+                window.location.href = '/';
+            }
         }
     </script>
 </body>
