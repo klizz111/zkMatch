@@ -95,8 +95,20 @@ class DatabaseManager:
                                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP"""
                 )
                 
-                # fhe相关
+                # 匹配结果表
+                self.create_table("matches",
+                                """id INTEGER PRIMARY KEY AUTOINCREMENT,
+                                user1 TEXT NOT NULL,
+                                user2 TEXT NOT NULL,
+                                match_date DATE NOT NULL,
+                                status TEXT DEFAULT 'active' CHECK(status IN ('active', 'inactive', 'blocked')),
+                                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                                FOREIGN KEY (user1) REFERENCES user_data(username),
+                                FOREIGN KEY (user2) REFERENCES user_data(username),
+                                UNIQUE(user1, user2)"""
+                )
                 
+                # fhe相关
                 # fhe_records 存储用户交互记录
                 """id INTEGER PRIMARY KEY AUTOINCREMENT,
                    match_id INTEGER NOT NULL, -- 匹配ID

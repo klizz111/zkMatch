@@ -136,44 +136,35 @@ class FHE {
     async prepare_contact_info(contact_info) {
         this.contact_info = contact_info;
         
-        // 1. 生成联系方式加密密钥（选择较小的密钥空间以适合ElGamal）
-        // 使用128位密钥，确保在ElGamal参数范围内
+        // 1. 生成联系方式加密密钥
         const maxKey = 2n ** 128n < this.q ? 2n ** 128n : this.q;
         const contact_key_int = this.generateSecureRandom(1n, maxKey);
         
-        // 将密钥转换为32字节的Uint8Array
-        const contact_key_bytes = new Uint8Array(32);
+        // 将密钥转换为16字节的Uint8Array (AES-128)
+        const contact_key_bytes = new Uint8Array(16);
         let key_temp = contact_key_int;
-        for (let i = 31; i >= 0; i--) {
+        for (let i = 15; i >= 0; i--) {
             contact_key_bytes[i] = Number(key_temp & 0xFFn);
             key_temp = key_temp >> 8n;
         }
         
-        // 2. 使用AES-ECB加密联系方式
-        const key = await crypto.subtle.importKey(
-            'raw',
-            contact_key_bytes,
-            { name: 'AES-ECB' },
-            false,
-            ['encrypt']
-        );
+        // 2. 使用CryptoJS的AES-ECB加密联系方式
+        const keyHex = Array.from(contact_key_bytes)
+            .map(b => b.toString(16).padStart(2, '0'))
+            .join('');
+        const key = CryptoJS.enc.Hex.parse(keyHex);
         
-        // PKCS7填充
-        const contactBytes = new TextEncoder().encode(contact_info);
-        const blockSize = 16;
-        const paddingLength = blockSize - (contactBytes.length % blockSize);
-        const paddedContact = new Uint8Array(contactBytes.length + paddingLength);
-        paddedContact.set(contactBytes);
-        for (let i = contactBytes.length; i < paddedContact.length; i++) {
-            paddedContact[i] = paddingLength;
-        }
+        // 使用ECB模式加密
+        const encrypted = CryptoJS.AES.encrypt(contact_info, key, {
+            mode: CryptoJS.mode.ECB,
+            padding: CryptoJS.pad.Pkcs7
+        });
         
-        const encryptedBuffer = await crypto.subtle.encrypt(
-            { name: 'AES-ECB' },
-            key,
-            paddedContact
+        // 转换为Uint8Array
+        const encryptedHex = encrypted.ciphertext.toString();
+        this.encrypted_contact = new Uint8Array(
+            encryptedHex.match(/.{2}/g).map(byte => parseInt(byte, 16))
         );
-        this.encrypted_contact = new Uint8Array(encryptedBuffer);
         
         // 3. 使用ElGamal加密联系方式密钥
         const k = this.generateSecureRandom(1n, this.q);
@@ -218,7 +209,7 @@ class FHE {
         console.log(`  明文: ${message} (${this.choice ? '接受' : '拒绝'})`);
         console.log(`  密文: (${c1.toString(16).substring(0, 15)}..., ${c2.toString(16).substring(0, 15)}...)`);
         
-        return [[c1, c2], message];
+        return [c1, c2]
     }
     
     decrypt_result(ciphertext) {
@@ -284,56 +275,47 @@ class FHE {
                     return null;
                 }
                 
-                // 将BigInt转换为32字节的Uint8Array
-                const contact_key_bytes = new Uint8Array(32);
+                // 将BigInt转换为16字节的Uint8Array (AES-128)
+                const contact_key_bytes = new Uint8Array(16);
                 let key_temp = contact_key_int;
-                for (let i = 31; i >= 0; i--) {
+                for (let i = 15; i >= 0; i--) {
                     contact_key_bytes[i] = Number(key_temp & 0xFFn);
                     key_temp = key_temp >> 8n;
                 }
-            } catch (e) {
-                console.log(`  ${this.name}: 密钥转换失败 - ${e.message}`);
-                return null;
-            }
-            
-            // 使用解密的密钥尝试解密联系方式
-            try {
-                const key = await crypto.subtle.importKey(
-                    'raw',
-                    contact_key_bytes,
-                    { name: 'AES-ECB' },
-                    false,
-                    ['decrypt']
-                );
                 
-                const decryptedBuffer = await crypto.subtle.decrypt(
-                    { name: 'AES-ECB' },
+                // 转换为CryptoJS格式
+                const keyHex = Array.from(contact_key_bytes)
+                    .map(b => b.toString(16).padStart(2, '0'))
+                    .join('');
+                const key = CryptoJS.enc.Hex.parse(keyHex);
+                
+                // 将加密数据转换为CryptoJS格式
+                const encryptedHex = Array.from(encrypted_contact)
+                    .map(b => b.toString(16).padStart(2, '0'))
+                    .join('');
+                const ciphertext = CryptoJS.enc.Hex.parse(encryptedHex);
+                
+                // 解密
+                const decrypted = CryptoJS.AES.decrypt(
+                    { ciphertext: ciphertext },
                     key,
-                    encrypted_contact
+                    {
+                        mode: CryptoJS.mode.ECB,
+                        padding: CryptoJS.pad.Pkcs7
+                    }
                 );
                 
-                // PKCS7去填充
-                const paddedPlaintext = new Uint8Array(decryptedBuffer);
-                const paddingLength = paddedPlaintext[paddedPlaintext.length - 1];
+                const contact_info = decrypted.toString(CryptoJS.enc.Utf8);
                 
-                // 验证填充是否有效
-                if (paddingLength > 16 || paddingLength < 1) {
-                    throw new Error("无效的填充");
+                if (!contact_info) {
+                    throw new Error("解密结果为空");
                 }
-                
-                for (let i = paddedPlaintext.length - paddingLength; i < paddedPlaintext.length; i++) {
-                    if (paddedPlaintext[i] !== paddingLength) {
-                        throw new Error("填充验证失败");
-                    }
-                }
-                
-                const contact_bytes = paddedPlaintext.slice(0, paddedPlaintext.length - paddingLength);
-                const contact_info = new TextDecoder('utf-8').decode(contact_bytes);
                 
                 console.log(`  ${this.name}: 成功解密对方联系方式`);
                 return contact_info;
+                
             } catch (e) {
-                console.log(`  ${this.name}: 联系方式解密失败 - ${e.message}`);
+                console.log(`  ${this.name}: 密钥转换或解密失败 - ${e.message}`);
                 return null;
             }
             
@@ -341,6 +323,6 @@ class FHE {
             console.log(`  ${this.name}: 联系方式解密异常 - ${e.message}`);
             return null;
         }
-    }
+    }   
     
 }

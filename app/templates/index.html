@@ -189,6 +189,10 @@
 
     <script src="{{ url_for('static', filename='js/secureElgamal.js') }}"></script>
     <script src="{{ url_for('static', filename='js/fhe.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/CryptoJS/rollups/aes.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/CryptoJS/components/mode-ecb.js') }}" ></script>
+    <script src="{{ url_for('static', filename='js/CryptoJS/components/pad-nopadding.js') }}"></script>
+
     <script>
         let secureElgamal = new SecureElGamal(256);
         let currentUser = null;
@@ -502,8 +506,13 @@
                                     ${push.user_info.bio ? `<p><strong>个人简介：</strong>${push.user_info.bio}</p>` : ''}
                                     
                                     <div class="push-actions">
+<<<<<<< HEAD
                                         <button class="btn btn-success" onclick="respondToPush(${push.push_id}, ${push.user_info.username}, 'accepted')">💕 接受</button>
                                         <button class="btn btn-secondary" onclick="respondToPush(${push.push_id}, ${push.user_info.username}, 'rejected')">❌ 拒绝</button>
+=======
+                                        <button class="btn btn-success" onclick="respondToPush(${push.push_id}, '${push.user_info.username}', 'accepted')">💕 接受</button>
+                                        <button class="btn btn-secondary" onclick="respondToPush(${push.push_id}, '${push.user_info.username}', 'rejected')">❌ 拒绝</button>
+>>>>>>> 65980d3 (frontend upload done)
                                     </div>
                                 </div>
                                 <div class="push-hint">
@@ -726,10 +735,12 @@
                 alert('❌ 生成失败: ' + error.message);
             }
         }
-        
+
         // 响应推送
-        async function respondToPush(pushId, response, username) {
+        async function respondToPush(pushId, username, response) {
             try {
+                console.log('响应推送:', pushId, username, response);
+                username = String(username);
                 const user_y = localStorage.getItem(`${username}_y`);
                 
                 // fhe初始化
@@ -737,20 +748,24 @@
                 fhe.load_params();
 
                 // 计算共同密钥
-                const sharedKey = await fhe.compute_shared_key(user_y);
+                const sharedKey = await fhe.compute_shared_secret(user_y);
                 
                 // 加密联系方式
                 contact_info = localStorage.getItem(`contact_info_${currentUser}`);
                 const encryptedContactInfo = await fhe.prepare_contact_info(contact_info);
+                const encrypted_contact_info = encryptedContactInfo[0];
+                const encrypted_key_c1 = encryptedContactInfo[1][0].toString();
+                const encrypted_key_c2 = encryptedContactInfo[1][1].toString();
 
                 // 加密选择
-                if (response === 'accepted') {
-                    response = await fhe.encrypt_choice(true);
+                if (response == 'accepted') {
+                    encrypted_response = await fhe.encrypt_choice(true);
                 } else {
-                    response = await fhe.encrypt_choice(false);
+                    encrypted_response = await fhe.encrypt_choice(false);
                 }
 
-                console.log(resonse);
+                encrypted_response_c1 = encrypted_response[0].toString();
+                encrypted_response_c2 = encrypted_response[1].toString();
 
                 const apiResponse = await fetch('/api/respond_push', {
                     method: 'POST',
@@ -760,7 +775,11 @@
                     },
                     body: JSON.stringify({
                         push_id: pushId,
-                        response: response
+                        encrypted_response_c1: encrypted_response_c1,
+                        encrypted_response_c2: encrypted_response_c2,
+                        encrypted_contact_info: encrypted_contact_info,
+                        encrypted_key_c1: encrypted_key_c1,
+                        encrypted_key_c2: encrypted_key_c2,
                     })
                 });
                 
