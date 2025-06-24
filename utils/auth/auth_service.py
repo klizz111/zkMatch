@@ -72,12 +72,11 @@ class AuthService:
                 'username': username,
                 'nickname': username,  # 默认昵称为用户名
                 'age': None,
-                'personal_info': None
             }
             
             try:
                 self.db.insert('user_data', user_data)
-                # print("User data inserted successfully")
+                print("User data inserted successfully")
             except:
                 pass  # 如果已存在则忽略
             

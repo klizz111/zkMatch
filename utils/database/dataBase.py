@@ -548,12 +548,13 @@ class DatabaseManager:
             return False
     
     def get_pending_pushes(self, username: str) -> List[dict]:
-        """获取用户待处理的推送"""
+        """获取用户待处理的推送（每次只返回一条）"""
         try:
-            # 获取待处理的推送
-            pushes = self.select('push_records', 
-                               'from_user = ? AND status = ?', 
-                               (username, 'pending'))
+            # 获取待处理的推送，按创建时间排序，只取第一条
+            pushes = self.execute_custom_sql(
+                "SELECT * FROM push_records WHERE from_user = ? AND status = ? ORDER BY created_at ASC LIMIT 1",
+                (username, 'pending')
+            )
             
             result = []
             for push in pushes:

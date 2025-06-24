@@ -111,12 +111,13 @@ class MatchingService:
             )
             stats['today_pushes'] = today_pushes[0]['count'] if today_pushes else 0
             
-            # 待处理推送数量
+            # 待处理推送数量（现在只显示是否有待处理的推送：0或1）
             pending_pushes = self.db.execute_custom_sql(
-                "SELECT COUNT(*) as count FROM push_records WHERE from_user = ? AND status = 'pending'",
+                "SELECT COUNT(*) as count FROM push_records WHERE from_user = ? AND status = 'pending' LIMIT 1",
                 (username,)
             )
-            stats['pending_pushes'] = pending_pushes[0]['count'] if pending_pushes else 0
+            # 如果有待处理的推送，显示1，否则显示0
+            stats['pending_pushes'] = 1 if (pending_pushes and pending_pushes[0]['count'] > 0) else 0
             
             # 总匹配数量
             total_matches = self.db.execute_custom_sql(

@@ -471,41 +471,52 @@
                 
                 if (data.success) {
                     if (data.pushes.length > 0) {
-                        contentEl.innerHTML = data.pushes.map(push => `
-                            <div class="push-card">
-                                <h3>💌 ${push.user_info.nickname}</h3>
-                                <div class="info-grid">
-                                    <div class="info-item">
-                                        <strong>年龄</strong>
-                                        <span>${push.user_info.age || '未知'}</span>
+                        // 只显示第一条推送（实际上后端已经只返回一条）
+                        const push = data.pushes[0];
+                        contentEl.innerHTML = `
+                            <div class="current-push">
+                                <h3>💌 当前推送</h3>
+                                <div class="push-card">
+                                    <h4>${push.user_info.nickname}</h4>
+                                    <div class="info-grid">
+                                        <div class="info-item">
+                                            <strong>年龄</strong>
+                                            <span>${push.user_info.age || '未知'}</span>
+                                        </div>
+                                        <div class="info-item">
+                                            <strong>性别</strong>
+                                            <span>${getGenderText(push.user_info.gender)}</span>
+                                        </div>
+                                        <div class="info-item">
+                                            <strong>身高</strong>
+                                            <span>${push.user_info.height || '未知'}cm</span>
+                                        </div>
+                                        <div class="info-item">
+                                            <strong>教育</strong>
+                                            <span>${getEducationText(push.user_info.education)}</span>
+                                        </div>
                                     </div>
-                                    <div class="info-item">
-                                        <strong>性别</strong>
-                                        <span>${getGenderText(push.user_info.gender)}</span>
-                                    </div>
-                                    <div class="info-item">
-                                        <strong>身高</strong>
-                                        <span>${push.user_info.height || '未知'}cm</span>
-                                    </div>
-                                    <div class="info-item">
-                                        <strong>教育</strong>
-                                        <span>${getEducationText(push.user_info.education)}</span>
+                                    ${push.user_info.hobbies ? `<p><strong>兴趣爱好：</strong>${push.user_info.hobbies}</p>` : ''}
+                                    ${push.user_info.bio ? `<p><strong>个人简介：</strong>${push.user_info.bio}</p>` : ''}
+                                    
+                                    <div class="push-actions">
+                                        <button class="btn btn-success" onclick="respondToPush(${push.push_id}, 'accepted')">💕 接受</button>
+                                        <button class="btn btn-secondary" onclick="respondToPush(${push.push_id}, 'rejected')">❌ 拒绝</button>
                                     </div>
                                 </div>
-                                ${push.user_info.hobbies ? `<p><strong>兴趣爱好：</strong>${push.user_info.hobbies}</p>` : ''}
-                                ${push.user_info.bio ? `<p><strong>个人简介：</strong>${push.user_info.bio}</p>` : ''}
-                                
-                                <div class="push-actions">
-                                    <button class="btn btn-success" onclick="respondToPush(${push.push_id}, 'accepted')">💕 接受</button>
-                                    <button class="btn btn-secondary" onclick="respondToPush(${push.push_id}, 'rejected')">❌ 拒绝</button>
+                                <div class="push-hint">
+                                    <p>📝 请选择接受或拒绝，处理完当前推送后才能获得下一条推送</p>
                                 </div>
                             </div>
-                        `).join('');
+                        `;
                     } else {
                         contentEl.innerHTML = `
                             <div class="empty-state">
-                                <h3>😴 今日暂无推送</h3>
+                                <h3>😴 当前没有待处理的推送</h3>
                                 <p>点击"生成新推送"按钮获取匹配对象</p>
+                                <div class="empty-actions">
+                                    <button class="btn btn-success" onclick="generatePushes()">生成新推送</button>
+                                </div>
                             </div>
                         `;
                     }
