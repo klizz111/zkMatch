@@ -16,7 +16,7 @@ class DatabaseManager:
         if not self.isInitialized:
             try:
                 self.connect()
-                # 用户信息表
+                # 用户信息，存储个人资料
                 self.create_table("user_data", 
                                 """id INTEGER PRIMARY KEY AUTOINCREMENT, 
                                 username TEXT NOT NULL UNIQUE, 
@@ -28,7 +28,6 @@ class DatabaseManager:
                                 education TEXT,
                                 hobbies TEXT,
                                 bio TEXT,
-                                contact_info TEXT,
                                 personal_info TEXT,
                                 profile_complete INTEGER DEFAULT 0,
                                 is_active INTEGER DEFAULT 1,
@@ -36,7 +35,7 @@ class DatabaseManager:
                                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP"""
                 )
                 
-                # 账户数据表
+                # 账户数据，用于用户登录
                 self.create_table("account_data",
                                   """id INTEGER PRIMARY KEY AUTOINCREMENT, 
                                   username TEXT NOT NULL UNIQUE, 
@@ -49,7 +48,7 @@ class DatabaseManager:
                                   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP"""
                 )
                 
-                # 会话管理表
+                # 会话管理
                 self.create_table("session_ID",
                                 """id INTEGER PRIMARY KEY AUTOINCREMENT,
                                 session_id TEXT NOT NULL UNIQUE,

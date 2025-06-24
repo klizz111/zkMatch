@@ -47,7 +47,7 @@ class ProfileService:
             # 允许更新的字段
             allowed_fields = ['nickname', 'age', 'gender', 'height', 'weight', 
                              'education', 'occupation', 'hobbies', 'bio', 'location',
-                             'contact_info', 'personal_info']
+                             'personal_info']
             
             update_data = {}
             for field in allowed_fields:
@@ -110,8 +110,7 @@ class ProfileService:
                     'occupation': user.get('occupation'),
                     'hobbies': user.get('hobbies'),
                     'bio': user.get('bio'),
-                    'location': user.get('location'),
-                    'contact_info': user.get('contact_info')
+                    'location': user.get('location')
                 }
             }
             

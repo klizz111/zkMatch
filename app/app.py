@@ -7,7 +7,7 @@ import logging
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from utils.database.dataBase import DatabaseManager
-from utils.api import AuthRoutes, MatchingRoutes, FHEMatchingRoutes
+from utils.api import AuthRoutes, MatchingRoutes
 
 app = Flask(__name__)
 app.config['DATABASE_PATH'] = 'datastorage.db'
@@ -76,10 +76,7 @@ def init_api_routes():
     
     # 初始化匹配系统路由，传入认证装饰器
     matching_routes = MatchingRoutes(app, db_path, auth_routes.require_session)
-    
-    # 初始化FHE同态加密匹配路由
-    fhe_matching_routes = FHEMatchingRoutes(app, db_path, auth_routes.require_session)
-    
+        
     logging.info("API routes initialized successfully")
 
 if __name__ == '__main__':

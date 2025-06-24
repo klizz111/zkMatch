@@ -1,4 +1,3 @@
-// 安全的ElGamal实现 - 支持零知识证明登录和Session管理
 class SecureElGamal {
     constructor(bits = 512) {  // 固定为512位
         this.bits = 512;  // 强制使用512位
