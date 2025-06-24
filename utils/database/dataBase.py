@@ -28,7 +28,6 @@ class DatabaseManager:
                                 education TEXT,
                                 hobbies TEXT,
                                 bio TEXT,
-                                personal_info TEXT,
                                 profile_complete INTEGER DEFAULT 0,
                                 is_active INTEGER DEFAULT 1,
                                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -101,17 +100,6 @@ class DatabaseManager:
                                 UNIQUE(user1, user2)"""
                 )
                 
-                # 用户互动记录表
-                self.create_table("user_interactions",
-                                """id INTEGER PRIMARY KEY AUTOINCREMENT,
-                                from_user TEXT NOT NULL,
-                                to_user TEXT NOT NULL,
-                                interaction_type TEXT CHECK(interaction_type IN ('view', 'like', 'skip', 'block')),
-                                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                                FOREIGN KEY (from_user) REFERENCES user_data(username),
-                                FOREIGN KEY (to_user) REFERENCES user_data(username)"""
-                )
-                
                 # 系统统计表
                 self.create_table("system_stats",
                                 """id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -120,85 +108,6 @@ class DatabaseManager:
                                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP"""
                 )
                 
-                # 同态加密匹配相关表
-                self.create_table("match_requests",
-                                """id INTEGER PRIMARY KEY AUTOINCREMENT,
-                                requester_id TEXT NOT NULL,
-                                target_id TEXT NOT NULL,
-                                requester_choice_cipher TEXT NOT NULL,
-                                requester_contact_data TEXT NOT NULL,
-                                status TEXT DEFAULT 'pending' CHECK(status IN ('pending', 'processed', 'expired')),
-                                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                                expires_at TIMESTAMP,
-                                FOREIGN KEY (requester_id) REFERENCES user_data(username),
-                                FOREIGN KEY (target_id) REFERENCES user_data(username),
-                                UNIQUE(requester_id, target_id, status)"""
-                )
-                
-                self.create_table("match_results",
-                                """id INTEGER PRIMARY KEY AUTOINCREMENT,
-                                request_id INTEGER NOT NULL,
-                                user1_id TEXT NOT NULL,
-                                user2_id TEXT NOT NULL,
-                                result_cipher TEXT NOT NULL,
-                                user1_contact_data TEXT NOT NULL,
-                                user2_contact_data TEXT NOT NULL,
-                                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                                FOREIGN KEY (request_id) REFERENCES match_requests(id) ON DELETE CASCADE,
-                                FOREIGN KEY (user1_id) REFERENCES user_data(username),
-                                FOREIGN KEY (user2_id) REFERENCES user_data(username)"""
-                )
-                
-                self.create_table("contact_exchanges",
-                                """id INTEGER PRIMARY KEY AUTOINCREMENT,
-                                match_result_id INTEGER NOT NULL,
-                                user_id TEXT NOT NULL,
-                                decrypted_contact TEXT,
-                                exchange_success BOOLEAN DEFAULT 0,
-                                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                                FOREIGN KEY (match_result_id) REFERENCES match_results(id) ON DELETE CASCADE,
-                                FOREIGN KEY (user_id) REFERENCES user_data(username)"""
-                )
-                
-                # 同态加密匹配会话表
-                self.create_table("fhe_match_sessions",
-                                """id INTEGER PRIMARY KEY AUTOINCREMENT,
-                                session_key TEXT NOT NULL UNIQUE,
-                                user1_id TEXT NOT NULL,
-                                user2_id TEXT NOT NULL,
-                                shared_secret_hash TEXT,
-                                user1_dh_public TEXT,
-                                user2_dh_public TEXT,
-                                user1_choice_cipher TEXT,
-                                user2_choice_cipher TEXT,
-                                user1_contact_data TEXT,
-                                user2_contact_data TEXT,
-                                user1_responded BOOLEAN DEFAULT 0,
-                                user2_responded BOOLEAN DEFAULT 0,
-                                result_computed BOOLEAN DEFAULT 0,
-                                result_cipher TEXT,
-                                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                                FOREIGN KEY (user1_id) REFERENCES user_data(username),
-                                FOREIGN KEY (user2_id) REFERENCES user_data(username),
-                                UNIQUE(user1_id, user2_id)"""
-                )
-                
-                # 安全匹配结果表
-                self.create_table("secure_match_results",
-                                """id INTEGER PRIMARY KEY AUTOINCREMENT,
-                                session_key TEXT NOT NULL,
-                                user_id TEXT NOT NULL,
-                                is_match BOOLEAN,
-                                contact_info TEXT,
-                                decrypted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                                FOREIGN KEY (session_key) REFERENCES fhe_match_sessions(session_key),
-                                FOREIGN KEY (user_id) REFERENCES user_data(username)"""
-                )
-                
-                # 原有的推送记录表修改，添加安全匹配支持
-                self.execute_custom_sql("""
-                    ALTER TABLE push_records ADD COLUMN fhe_session_key TEXT;
-                """)
                 
                 # account_data中添加root用户，将root的p,g,q,y设置为系统全局的群参数
                 elgamal = ElGamal(bits=512)
@@ -579,10 +488,6 @@ class DatabaseManager:
                 if prefs.get('max_height'):
                     conditions.append("height <= ?")
                     params.append(prefs['max_height'])
-                
-                if prefs.get('preferred_location'):
-                    conditions.append("location = ?")
-                    params.append(prefs['preferred_location'])
             
             # 排除已经推送过的用户（今天）
             today = datetime.date.today().isoformat()
@@ -654,9 +559,15 @@ class DatabaseManager:
             for push in pushes:
                 # 获取推送对象的详细信息
                 user_info = self.select('user_data', 'username = ?', (push['to_user'],))
+                
+                # 获取对象的公钥y
+                user_account = self.select('account_data', 'username = ?', (push['to_user'],))
+                user_y = None
+                if user_account and len(user_account) > 0:
+                    user_y = user_account[0]['y']
+                    
                 if user_info:
                     user_data = dict(user_info[0])
-                    # 不返回敏感信息
                     safe_user_data = {
                         'username': user_data['username'],
                         'nickname': user_data['nickname'],
@@ -664,10 +575,10 @@ class DatabaseManager:
                         'gender': user_data['gender'],
                         'height': user_data['height'],
                         'education': user_data['education'],
-                        'occupation': user_data['occupation'],
+                        # 'occupation': user_data['occupation'],
                         'hobbies': user_data['hobbies'],
                         'bio': user_data['bio'],
-                        'location': user_data['location']
+                        'user_y': user_y 
                     }
                     result.append({
                         'push_id': push['id'],

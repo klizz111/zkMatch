@@ -79,7 +79,7 @@ class User:
         return self.shared_secret
     
     def prepare_contact_info(self):
-        """准备加密的联系方式 - 改进版本"""
+        """准备加密的联系方式"""
         # 1. 生成联系方式加密密钥（选择较小的密钥空间以适合ElGamal）
         # 使用128位密钥，确保在ElGamal参数范围内
         contact_key_int = crypto_random.randrange(1, min(2**128, self.q))
@@ -103,42 +103,7 @@ class User:
         print(f"  密钥ElGamal密文: ({hex(c1)[:15]}..., {hex(c2)[:15]}...)")
         
         return self.encrypted_contact, self.contact_key_ciphertext
-    
-    def prepare_contact_info_v3(self):
-        """改进版本3：使用条件ElGamal加密"""
-        # 1. 生成一个小的联系方式加密密钥
-        contact_key_small = crypto_random.randrange(1, 2**32)  # 32位密钥
-        
-        # 2. 将小密钥扩展为AES密钥
-        key_seed = contact_key_small.to_bytes(4, 'big')
-        contact_key_bytes = hashlib.sha256(key_seed).digest()[:32]
-        
-        # 3. 使用AES加密联系方式
-        cipher = AES.new(contact_key_bytes, AES.MODE_ECB)
-        padded_contact = pad(self.contact_info.encode('utf-8'), AES.block_size)
-        self.encrypted_contact = cipher.encrypt(padded_contact)
-        
-        # 4. 使用ElGamal加密小密钥
-        k = crypto_random.randrange(1, self.q)
-        c1 = pow(self.g, k, self.p)
-        c2 = (contact_key_small * pow(self.shared_y, k, self.p)) % self.p
-        self.contact_key_ciphertext = (c1, c2)
-        
-        # 5. 同时准备一个"虚假密钥"密文，用于匹配失败时的混淆
-        fake_key = crypto_random.randrange(1, 2**32)
-        k_fake = crypto_random.randrange(1, self.q)
-        c1_fake = pow(self.g, k_fake, self.p)
-        c2_fake = (fake_key * pow(self.shared_y, k_fake, self.p)) % self.p
-        self.fake_key_ciphertext = (c1_fake, c2_fake)
-        
-        print(f"{self.name} 准备联系方式（v3版本）:")
-        print(f"  联系方式: {self.contact_info}")
-        print(f"  小密钥: {contact_key_small}")
-        print(f"  真实密钥密文: ({hex(c1)[:10]}..., {hex(c2)[:10]}...)")
-        print(f"  虚假密钥密文: ({hex(c1_fake)[:10]}..., {hex(c2_fake)[:10]}...)")
-        
-        return self.encrypted_contact, self.contact_key_ciphertext, self.fake_key_ciphertext
-    
+     
     def set_choice(self, choice):
         """设置匹配选择"""
         self.choice = choice

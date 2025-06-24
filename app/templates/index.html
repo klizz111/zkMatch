@@ -39,10 +39,6 @@
                         <h3 id="totalMatches">-</h3>
                         <p>总匹配</p>
                     </div>
-                    <div class="stat-card">
-                        <h3 id="acceptanceRate">-</h3>
-                        <p>接受率</p>
-                    </div>
                 </div>
             </div>
             
@@ -290,7 +286,6 @@
                     document.getElementById('todayPushes').textContent = data.stats.today_pushes;
                     document.getElementById('pendingPushes').textContent = data.stats.pending_pushes;
                     document.getElementById('totalMatches').textContent = data.stats.total_matches;
-                    document.getElementById('acceptanceRate').textContent = data.stats.acceptance_rate + '%';
                 } else {
                     console.error('加载统计数据失败:', data.error);
                 }
@@ -499,16 +494,6 @@
                                 </div>
                                 ${push.user_info.hobbies ? `<p><strong>兴趣爱好：</strong>${push.user_info.hobbies}</p>` : ''}
                                 ${push.user_info.bio ? `<p><strong>个人简介：</strong>${push.user_info.bio}</p>` : ''}
-                                
-                                <div style="margin: 15px 0;">
-                                    <label style="font-weight: normal; display: flex; align-items: center; margin-bottom: 10px;">
-                                        <input type="checkbox" id="secure_match_${push.push_id}" style="margin-right: 8px;">
-                                        🔒 启用安全匹配模式
-                                    </label>
-                                    <small style="color: #666; margin-left: 24px;">
-                                        安全匹配模式下，双方的选择和联系方式都将被加密保护，只有匹配成功才能交换联系方式
-                                    </small>
-                                </div>
                                 
                                 <div class="push-actions">
                                     <button class="btn btn-success" onclick="respondToPush(${push.push_id}, 'accepted')">💕 接受</button>

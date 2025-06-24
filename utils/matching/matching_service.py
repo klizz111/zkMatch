@@ -125,21 +125,6 @@ class MatchingService:
             )
             stats['total_matches'] = total_matches[0]['count'] if total_matches else 0
             
-            # 接受率统计
-            accepted_count = self.db.execute_custom_sql(
-                "SELECT COUNT(*) as count FROM push_records WHERE from_user = ? AND status = 'accepted'",
-                (username,)
-            )
-            total_responded = self.db.execute_custom_sql(
-                "SELECT COUNT(*) as count FROM push_records WHERE from_user = ? AND status IN ('accepted', 'rejected')",
-                (username,)
-            )
-            
-            if total_responded and total_responded[0]['count'] > 0:
-                stats['acceptance_rate'] = round((accepted_count[0]['count'] / total_responded[0]['count']) * 100, 1)
-            else:
-                stats['acceptance_rate'] = 0
-            
             return {
                 'success': True,
                 'stats': stats
