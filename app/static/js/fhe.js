@@ -1,6 +1,8 @@
 class FHE {
     constructor(name) {
         this.name = name;
+        console.log(`${this.name} call FHE constructor`);
+
         this.p = null;
         this.q = null;
         this.g = null;
@@ -20,6 +22,16 @@ class FHE {
         this.contact_key_ciphertext = null;
 
         
+    }
+
+    // 从localStorage加载参数
+    load_params() {
+        this.p = BigInt(localStorage.getItem(`system_p`));
+        this.q = BigInt(localStorage.getItem(`system_q`));
+        this.g = BigInt(localStorage.getItem(`system_g`));
+        let seed = localStorage.getItem(`zk_login_seed_${this.name}`);
+        this.generate_dh_key_pair(seed);
+        console.log(`${this.name} 加载参数: p=${this.p}, q=${this.q}, g=${this.g}`);
     }
 
     // setup(p, q, g) {
@@ -182,14 +194,14 @@ class FHE {
         this.choice = choice;
     }
     
-    async encrypt_choice() {
+    async encrypt_choice(choice) {
         /**加密匹配选择*/
         if (this.shared_private_key === null) {
             throw new Error("共享私钥未设置");
         }
         
         let message;
-        if (this.choice) {
+        if (choice) {
             // 接受：加密明文 1
             message = 1n;
         } else {

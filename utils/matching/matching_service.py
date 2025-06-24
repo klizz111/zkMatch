@@ -2,6 +2,7 @@ import logging
 import datetime
 from typing import List, Dict, Any, Optional
 from ..database.dataBase import DatabaseManager
+from ..fhe.fhe import Platform
 
 class MatchingService:
     """匹配服务类，处理匹配推送和匹配逻辑"""

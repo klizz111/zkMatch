@@ -87,19 +87,6 @@ class DatabaseManager:
                                 UNIQUE(from_user, to_user, push_date)"""
                 )
                 
-                # 匹配结果表
-                self.create_table("matches",
-                                """id INTEGER PRIMARY KEY AUTOINCREMENT,
-                                user1 TEXT NOT NULL,
-                                user2 TEXT NOT NULL,
-                                match_date DATE NOT NULL,
-                                status TEXT DEFAULT 'active' CHECK(status IN ('active', 'inactive', 'blocked')),
-                                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                                FOREIGN KEY (user1) REFERENCES user_data(username),
-                                FOREIGN KEY (user2) REFERENCES user_data(username),
-                                UNIQUE(user1, user2)"""
-                )
-                
                 # 系统统计表
                 self.create_table("system_stats",
                                 """id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -107,6 +94,49 @@ class DatabaseManager:
                                 stat_value TEXT NOT NULL,
                                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP"""
                 )
+                
+                # fhe相关
+                
+                # fhe_records 存储用户交互记录
+                """id INTEGER PRIMARY KEY AUTOINCREMENT,
+                   match_id INTEGER NOT NULL, -- 匹配ID
+                   username1 TEXT NOT NULL, -- 用户1
+                   username2 TEXT NOT NULL, -- 用户2
+                   visited_1 INTEGER DEFAULT 0, -- 1是否查看过2
+                   visited_2 INTEGER DEFAULT 0, -- 2是否查看过1
+                   bond_pub_key TEXT NOT NULL, -- 共同的公钥
+                   encrypted_contact_info_1 TEXT, -- 用户1的加密联系方式
+                   encrypted_contact_info_2 TEXT, -- 用户2的加密联系方式
+                   encrypted_enc_key_1 TEXT, -- 用户1的加密密钥
+                   encrypted_enc_key_2 TEXT, -- 用户2的加密密钥
+                   encrypted_choice_1 TEXT, -- 用户1的加密选择
+                   encrypted_choice_2 TEXT, -- 用户2的加密选择
+                   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                   FOREIGN KEY (match_id) REFERENCES push_records(id),
+                   FOREIGN KEY (username1) REFERENCES user_data(username),
+                   FOREIGN KEY (username2) REFERENCES user_data(username)
+                """
+                self.create_table("fhe_records",
+                                  """id INTEGER PRIMARY KEY AUTOINCREMENT,
+                                     match_id INTEGER NOT NULL, 
+                                     username1 TEXT NOT NULL, 
+                                     username2 TEXT NOT NULL, 
+                                     visited_1 INTEGER DEFAULT 0, 
+                                     visited_2 INTEGER DEFAULT 0, 
+                                     bond_pub_key TEXT NOT NULL, 
+                                     encrypted_contact_info_1 TEXT, 
+                                     encrypted_contact_info_2 TEXT, 
+                                     encrypted_enc_key_1 TEXT, 
+                                     encrypted_enc_key_2 TEXT, 
+                                     encrypted_choice_1 TEXT, 
+                                     encrypted_choice_2 TEXT, 
+                                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                                     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                                     FOREIGN KEY (match_id) REFERENCES push_records(id),
+                                     FOREIGN KEY (username1) REFERENCES user_data(username),
+                                     FOREIGN KEY (username2) REFERENCES user_data(username)
+                                  """)
                 
                 
                 # account_data中添加root用户，将root的p,g,q,y设置为系统全局的群参数

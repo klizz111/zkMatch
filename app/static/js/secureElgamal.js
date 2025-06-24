@@ -117,6 +117,12 @@ class SecureElGamal {
             this.y = BigInt(challengeData.y);
             this.q = (this.p - 1n) / 2n;
             
+            // 存储到本地
+            localStorage.setItem('system_p', this.p.toString());
+            localStorage.setItem('system_g', this.g.toString());
+            localStorage.setItem('system_y', this.y.toString());
+            localStorage.setItem('system_q', this.q.toString());
+            
             // 使用种子派生私钥
             this.x = await this.derivePrivateKey(seed);
             // 保存到本地存储
