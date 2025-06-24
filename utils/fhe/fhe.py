@@ -235,3 +235,23 @@ class Platform:
         return (final_result_cipher, 
                 (contact2_key_for_user1, contact2_encrypted),  # user1获得user2的数据
                 (contact1_key_for_user2, contact1_encrypted))  # user2获得user1的数据
+
+    def process_secure_matching_v2(self, user1_data, user2_data):
+        """处理安全匹配请求，返回加密的联系方式"""
+        choice_cipher1, contact1_key_cipher = user1_data
+        choice_cipher2, contact2_key_cipher = user2_data
+        
+        # 1. 同态乘法处理匹配选择
+        result_cipher = self.homomorphic_multiplication(choice_cipher1, choice_cipher2)
+        
+        # 2. 再随机化匹配结果
+        final_result_cipher = self.rerandomize(result_cipher)
+        
+        # 3. 用匹配结果绑定联系方式密钥
+        contact2_key_for_user1 = self.homomorphic_multiplication(final_result_cipher, contact2_key_cipher)
+        contact1_key_for_user2 = self.homomorphic_multiplication(final_result_cipher, contact1_key_cipher)
+        
+        return (final_result_cipher, 
+                contact2_key_for_user1,  # user1获得user2的联系方式密钥
+                contact1_key_for_user2)
+        

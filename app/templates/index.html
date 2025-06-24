@@ -194,7 +194,7 @@
     <script src="{{ url_for('static', filename='js/CryptoJS/components/pad-nopadding.js') }}"></script>
 
     <script>
-        let secureElgamal = new SecureElGamal(256);
+        let secureElgamal = new SecureElGamal(512);
         let currentUser = null;
         let currentSession = null;
 
@@ -506,13 +506,8 @@
                                     ${push.user_info.bio ? `<p><strong>个人简介：</strong>${push.user_info.bio}</p>` : ''}
                                     
                                     <div class="push-actions">
-<<<<<<< HEAD
-                                        <button class="btn btn-success" onclick="respondToPush(${push.push_id}, ${push.user_info.username}, 'accepted')">💕 接受</button>
-                                        <button class="btn btn-secondary" onclick="respondToPush(${push.push_id}, ${push.user_info.username}, 'rejected')">❌ 拒绝</button>
-=======
                                         <button class="btn btn-success" onclick="respondToPush(${push.push_id}, '${push.user_info.username}', 'accepted')">💕 接受</button>
                                         <button class="btn btn-secondary" onclick="respondToPush(${push.push_id}, '${push.user_info.username}', 'rejected')">❌ 拒绝</button>
->>>>>>> 65980d3 (frontend upload done)
                                     </div>
                                 </div>
                                 <div class="push-hint">
@@ -749,6 +744,7 @@
 
                 // 计算共同密钥
                 const sharedKey = await fhe.compute_shared_secret(user_y);
+                localStorage.setItem(`${currentUser}_${username}_shared_key`, sharedKey);
                 
                 // 加密联系方式
                 contact_info = localStorage.getItem(`contact_info_${currentUser}`);

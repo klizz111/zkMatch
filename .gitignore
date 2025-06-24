@@ -6,4 +6,6 @@
 /**.db
 **/**pycache**
 /output
-**.txt
+*.txt
+!requirements.txt
+*.json
