@@ -4,6 +4,8 @@ from ..database.dataBase import DatabaseManager
 import datetime
 import logging
 from ..fhe.fhe import *
+import random
+from ..useful.gen_rand_message import generate_random_message_string
 
 class MatchingRoutes:
     """匹配系统相关的路由处理类"""
@@ -166,10 +168,10 @@ class MatchingRoutes:
                     'y': root_account[0]['y']
                 }
                 
-                # 检查fhe_records中是否已存在此匹配记录
+                # 使用组合键查找现有的FHE记录
                 existing_fhe = db.execute_custom_sql(
-                    "SELECT * FROM fhe_records WHERE match_id = ?",
-                    (push_id,)
+                    "SELECT * FROM fhe_records WHERE (username1 = ? AND username2 = ?) OR (username1 = ? AND username2 = ?)",
+                    (username, to_user, to_user, username)
                 )
                 
                 if existing_fhe:
@@ -243,8 +245,8 @@ class MatchingRoutes:
                 
                 # 检查双方是否都已经响应
                 updated_fhe = db.execute_custom_sql(
-                    "SELECT * FROM fhe_records WHERE match_id = ?",
-                    (push_id,)
+                    "SELECT * FROM fhe_records WHERE (username1 = ? AND username2 = ?) OR (username1 = ? AND username2 = ?)",
+                    (username, to_user, to_user, username)
                 )
                 
                 if updated_fhe and updated_fhe[0]['visited_1'] == 1 and updated_fhe[0]['visited_2'] == 1:
@@ -338,3 +340,68 @@ class MatchingRoutes:
                 return jsonify(result)
             else:
                 return jsonify(result), 500
+            
+        @self.app.route('/api/fhe_match_results', methods=['POST'])
+        @self.require_session
+        def get_fhe_match_res():
+            """获取fhe匹配结果"""
+            username = g.current_user
+            data = request.get_json()
+
+            db = self._get_db_manager()
+            push_id = data.get('push_id') 
+            
+            try:
+                # 获取推送记录信息
+                push_records = db.execute_custom_sql(
+                    "SELECT * FROM push_records WHERE id = ? AND from_user = ?",
+                    (push_id, username)
+                )
+                
+                if not push_records:
+                    return jsonify({'error': '推送记录不存在'}), 404
+                
+                push = push_records[0]
+                to_user = push['to_user']
+                
+                existing_fhe = db.execute_custom_sql(
+                    "SELECT * FROM fhe_records WHERE (username1 = ? AND username2 = ?) OR (username1 = ? AND username2 = ?)",
+                    (username, to_user, to_user, username)
+                )
+                
+                if existing_fhe:
+                    # 检查双方是否都已经响应
+                    updated_fhe = db.execute_custom_sql(
+                    "SELECT * FROM fhe_records WHERE (username1 = ? AND username2 = ?) OR (username1 = ? AND username2 = ?)",
+                    (username, to_user, to_user, username)
+                    )
+                    
+                    # 返回fhe计算后的数据
+                    if updated_fhe and updated_fhe[0]['visited_1'] == 1 and updated_fhe[0]['visited_2'] == 1:
+                        # 双方都已经响应，直接返回
+                        fhe_record = updated_fhe[0]
+                        username1 = fhe_record['username1']
+                        if username1 == username: # 当前用户是username1
+                            contact_key = (fhe_record['fhe_caculated_enc_key_1_c1'], fhe_record['fhe_caculated_enc_key_1_c2'])
+                            contact_info = fhe_record['encrypted_contact_info_2']
+                        else: # 当前用户是username2
+                            contact_key = (fhe_record['fhe_caculated_enc_key_2_c1'], fhe_record['fhe_caculated_enc_key_2_c2'])
+                            contact_info = fhe_record['encrypted_contact_info_1']
+                        fhe_result = (fhe_record['fhe_caculated_choice_c1'], fhe_record['fhe_caculated_choice_c2'])
+                    else: # 直接返回随机数据
+                        contact_info = generate_random_message_string()
+                        fhe_result = (random.getrandbits(512), random.getrandbits(512))
+                        contact_key = (random.getrandbits(512), random.getrandbits(512))
+                    
+                    return jsonify({
+                            'success': True,
+                            'fhe_result': fhe_result,
+                            'contact_key': contact_key,
+                            'contact_info': contact_info
+                        })
+                else:
+                    return jsonify({'error': '没有找到匹配的FHE记录'}), 404
+                
+            except Exception as e:
+                logging.error(f"Respond to push error: {e}")
+                return jsonify({'error': f'操作失败: {str(e)}'}), 500

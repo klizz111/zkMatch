@@ -836,6 +836,33 @@
             };
             return educationMap[education] || '未知';
         }
+
+        async function get_fhe_match_res(push_id, username) {
+            try{
+                response = await fetch('/api/fhe_match_results', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${currentSession}`
+                },
+                body: JSON.stringify({
+                    push_id: push_id,
+                    username: username
+                })
+                });
+            }
+          
+            catch (error) {
+                console.error('获取FHE匹配结果失败:', error);
+                return null;
+            }
+
+            if (!response.sucess) {
+                console.error('获取FHE匹配结果失败:', response.error);
+                return null;
+            }
+            console.log('获取FHE匹配结果:', response);
+        }
     </script>
 </body>
 </html>
