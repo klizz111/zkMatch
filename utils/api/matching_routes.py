@@ -372,10 +372,10 @@ class MatchingRoutes:
                         username1 = fhe_record['username1']
                         
                         if username1 == username: # 当前用户是username1
-                            contact_key = [fhe_record['fhe_caculated_enc_key_1_c1'], fhe_record['fhe_caculated_enc_key_1_c2']]
+                            contact_key = [fhe_record['fhe_caculated_enc_key_2_c1'], fhe_record['fhe_caculated_enc_key_2_c2']]
                             contact_info_str = fhe_record['encrypted_contact_info_2']
                         else: # 当前用户是username2
-                            contact_key = [fhe_record['fhe_caculated_enc_key_2_c1'], fhe_record['fhe_caculated_enc_key_2_c2']]
+                            contact_key = [fhe_record['fhe_caculated_enc_key_1_c1'], fhe_record['fhe_caculated_enc_key_1_c2']]
                             contact_info_str = fhe_record['encrypted_contact_info_1']
                         
                         fhe_result = [fhe_record['fhe_caculated_choice_c1'], fhe_record['fhe_caculated_choice_c2']]

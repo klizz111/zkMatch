@@ -1,3 +1,84 @@
+/**
+ * AES-ECB模式加密函数
+ * @param {string} plaintext - 要加密的明文字符串
+ * @param {bigint} contact_key_int - 用作密钥的大整数
+ * @returns {string} 加密后的十六进制字符串
+ */
+function aes_enc_ecb(plaintext, contact_key_int) {
+    // 将BigInt转换为16字节的Uint8Array (AES-128)
+    const contact_key_bytes = new Uint8Array(16);
+    let key_temp = contact_key_int;
+    for (let i = 15; i >= 0; i--) {
+        contact_key_bytes[i] = Number(key_temp & 0xFFn);
+        key_temp = key_temp >> 8n;
+    }
+    
+    // 转换为CryptoJS格式的密钥
+    const keyHex = Array.from(contact_key_bytes)
+        .map(b => b.toString(16).padStart(2, '0'))
+        .join('');
+    const key = CryptoJS.enc.Hex.parse(keyHex);
+    
+    // 使用ECB模式加密，PKCS7填充
+    const encrypted = CryptoJS.AES.encrypt(plaintext, key, {
+        mode: CryptoJS.mode.ECB,
+        padding: CryptoJS.pad.Pkcs7
+    });
+    
+    // 测试解密
+    // console.log(`plaintext: ${contact_key_bytes}`);
+    const decrypted = aes_dec_ecb(encrypted.ciphertext.toString(), contact_key_int);
+    if (decrypted !== plaintext) {
+        console.error("AES解密验证失败，可能是加密或解密过程中出现问题");
+    } else {
+        console.log("AES解密验证成功");
+        console.log(`解密结果: ${decrypted}`);
+    }
+    // 返回加密后的十六进制字符串
+    return encrypted.ciphertext.toString();
+}
+
+/**
+ * AES-ECB模式解密函数
+ * @param {string} ciphertext - 要解密的十六进制密文字符串
+ * @param {bigint} contact_key_int - 用作密钥的大整数
+ * @returns {string} 解密后的明文字符串
+ */
+function aes_dec_ecb(ciphertext, contact_key_int) {
+    // 将BigInt转换为16字节的Uint8Array (AES-128)'
+    console.log("call aes_dec_ecb");
+    console.log(`contact_key_int: ${contact_key_int}`);
+    console.log(`ciphertext: ${ciphertext}`);
+    const contact_key_bytes = new Uint8Array(16);
+    let key_temp = contact_key_int;
+    for (let i = 15; i >= 0; i--) {
+        contact_key_bytes[i] = Number(key_temp & 0xFFn);
+        key_temp = key_temp >> 8n;
+    }
+    
+    // 转换为CryptoJS格式的密钥
+    const keyHex = Array.from(contact_key_bytes)
+        .map(b => b.toString(16).padStart(2, '0'))
+        .join('');
+    const key = CryptoJS.enc.Hex.parse(keyHex);
+    
+    // 将十六进制密文转换为CryptoJS格式
+    const ciphertextObj = CryptoJS.enc.Hex.parse(ciphertext);
+    
+    // 解密
+    const decrypted = CryptoJS.AES.decrypt(
+        { ciphertext: ciphertextObj },
+        key,
+        {
+            mode: CryptoJS.mode.ECB,
+            padding: CryptoJS.pad.Pkcs7
+        }
+    );
+    
+    // 返回解密后的明文字符串
+    return decrypted.toString(CryptoJS.enc.Utf8);
+}
+
 class FHE {
     constructor(name) {
         this.name = name;
@@ -142,28 +223,10 @@ class FHE {
 
         localStorage.setItem(`contact_key_${this.name}`, contact_key_int.toString());
         
-        // 将密钥转换为16字节的Uint8Array (AES-128)
-        const contact_key_bytes = new Uint8Array(16);
-        let key_temp = contact_key_int;
-        for (let i = 15; i >= 0; i--) {
-            contact_key_bytes[i] = Number(key_temp & 0xFFn);
-            key_temp = key_temp >> 8n;
-        }
-        
-        // 2. 使用CryptoJS的AES-ECB加密联系方式
-        const keyHex = Array.from(contact_key_bytes)
-            .map(b => b.toString(16).padStart(2, '0'))
-            .join('');
-        const key = CryptoJS.enc.Hex.parse(keyHex);
-        
-        // 使用ECB模式加密
-        const encrypted = CryptoJS.AES.encrypt(contact_info, key, {
-            mode: CryptoJS.mode.ECB,
-            padding: CryptoJS.pad.Pkcs7
-        });
+        // 2. 使用独立的AES加密函数
+        const encryptedHex = aes_enc_ecb(contact_info, contact_key_int);
         
         // 转换为Uint8Array
-        const encryptedHex = encrypted.ciphertext.toString();
         this.encrypted_contact = new Uint8Array(
             encryptedHex.match(/.{2}/g).map(byte => parseInt(byte, 16))
         );
@@ -251,14 +314,10 @@ class FHE {
         return (x % m + m) % m;
     }
         
-    async decrypt_contact_info(contact_key_ciphertext, encrypted_contact, match_result) {
+    async decrypt_contact_info(contact_key_ciphertext, encrypted_contact) {
         /**解密对方的联系方式（仅在匹配成功时有效）*/
         // 首先检查匹配是否成功
-        if (!match_result) {
-            console.log(`  ${this.name}: 匹配失败，拒绝解密联系方式`);
-            return null;
-        }
-        
+
         try {
             const [c1, c2] = contact_key_ciphertext;
             
@@ -269,7 +328,6 @@ class FHE {
             
             console.log(`  ${this.name}: 解密得到密钥数值: ${contact_key_int}`);
             
-            // 将解密得到的数值转换为字节
             try {
                 // 限制在128位范围内
                 if (contact_key_int > 2n ** 128n) {
@@ -277,37 +335,13 @@ class FHE {
                     return null;
                 }
                 
-                // 将BigInt转换为16字节的Uint8Array (AES-128)
-                const contact_key_bytes = new Uint8Array(16);
-                let key_temp = contact_key_int;
-                for (let i = 15; i >= 0; i--) {
-                    contact_key_bytes[i] = Number(key_temp & 0xFFn);
-                    key_temp = key_temp >> 8n;
-                }
-                
-                // 转换为CryptoJS格式
-                const keyHex = Array.from(contact_key_bytes)
-                    .map(b => b.toString(16).padStart(2, '0'))
-                    .join('');
-                const key = CryptoJS.enc.Hex.parse(keyHex);
-                
-                // 将加密数据转换为CryptoJS格式
+                // 将加密数据转换为十六进制字符串
                 const encryptedHex = Array.from(encrypted_contact)
                     .map(b => b.toString(16).padStart(2, '0'))
                     .join('');
-                const ciphertext = CryptoJS.enc.Hex.parse(encryptedHex);
                 
-                // 解密
-                const decrypted = CryptoJS.AES.decrypt(
-                    { ciphertext: ciphertext },
-                    key,
-                    {
-                        mode: CryptoJS.mode.ECB,
-                        padding: CryptoJS.pad.Pkcs7
-                    }
-                );
-                
-                const contact_info = decrypted.toString(CryptoJS.enc.Utf8);
+                // 使用独立的AES解密函数
+                const contact_info = aes_dec_ecb(encryptedHex, contact_key_int);
                 
                 if (!contact_info) {
                     throw new Error("解密结果为空");
@@ -403,17 +437,6 @@ class FHE {
                                 }
                             } catch (e3) {
                                 console.log('方式3失败:', e3.message);
-                            }
-                        }
-                        
-                        // 方式4: 使用eval（最后的选择）
-                        if (!parseSuccess) {
-                            try {
-                                contactInfoData = eval('(' + contact_info + ')');
-                                parseSuccess = true;
-                                console.log('方式4成功: eval');
-                            } catch (e4) {
-                                console.log('方式4失败:', e4.message);
                             }
                         }
                         
