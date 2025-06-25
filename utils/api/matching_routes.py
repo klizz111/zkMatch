@@ -6,6 +6,7 @@ import logging
 from ..fhe.fhe import *
 import random
 from ..useful.gen_rand_message import generate_random_message_string
+import json
 
 class MatchingRoutes:
     """匹配系统相关的路由处理类"""
@@ -363,38 +364,48 @@ class MatchingRoutes:
                 )
                 
                 if existing_fhe:
-                    # 检查双方是否都已经响应
-                    updated_fhe = db.execute_custom_sql(
-                    "SELECT * FROM fhe_records WHERE (username1 = ? AND username2 = ?) OR (username1 = ? AND username2 = ?)",
-                    (username, to_user, to_user, username)
-                    )
+                    fhe_record = existing_fhe[0]
                     
-                    # 返回fhe计算后的数据
-                    if updated_fhe and updated_fhe[0]['visited_1'] == 1 and updated_fhe[0]['visited_2'] == 1:
-                        # 双方都已经响应，直接返回
-                        fhe_record = updated_fhe[0]
+                    # 检查双方是否都已经响应
+                    if fhe_record['visited_1'] == 1 and fhe_record['visited_2'] == 1:
+                        # 双方都已经响应，返回FHE计算结果
                         username1 = fhe_record['username1']
+                        
                         if username1 == username: # 当前用户是username1
-                            contact_key = (fhe_record['fhe_caculated_enc_key_1_c1'], fhe_record['fhe_caculated_enc_key_1_c2'])
-                            contact_info = fhe_record['encrypted_contact_info_2']
+                            contact_key = [fhe_record['fhe_caculated_enc_key_1_c1'], fhe_record['fhe_caculated_enc_key_1_c2']]
+                            contact_info_str = fhe_record['encrypted_contact_info_2']
                         else: # 当前用户是username2
-                            contact_key = (fhe_record['fhe_caculated_enc_key_2_c1'], fhe_record['fhe_caculated_enc_key_2_c2'])
-                            contact_info = fhe_record['encrypted_contact_info_1']
-                        fhe_result = (fhe_record['fhe_caculated_choice_c1'], fhe_record['fhe_caculated_choice_c2'])
-                    else: # 直接返回随机数据
+                            contact_key = [fhe_record['fhe_caculated_enc_key_2_c1'], fhe_record['fhe_caculated_enc_key_2_c2']]
+                            contact_info_str = fhe_record['encrypted_contact_info_1']
+                        
+                        fhe_result = [fhe_record['fhe_caculated_choice_c1'], fhe_record['fhe_caculated_choice_c2']]
+                        
+                        # 处理contact_info格式
+                        contact_info = contact_info_str
+                        if contact_info_str and contact_info_str != 'None':
+                            try:
+                                # 尝试解析为JSON
+                                import json
+                                contact_info = json.loads(contact_info_str)
+                            except:
+                                # 如果解析失败，保持原始字符串
+                                contact_info = contact_info_str
+                    
+                    else: 
+                        # 如果没有完整的匹配数据，返回随机数据
                         contact_info = generate_random_message_string()
-                        fhe_result = (random.getrandbits(512), random.getrandbits(512))
-                        contact_key = (random.getrandbits(512), random.getrandbits(512))
+                        fhe_result = [str(random.getrandbits(512)), str(random.getrandbits(512))]
+                        contact_key = [str(random.getrandbits(512)), str(random.getrandbits(512))]
                     
                     return jsonify({
-                            'success': True,
-                            'fhe_result': fhe_result,
-                            'contact_key': contact_key,
-                            'contact_info': contact_info
-                        })
+                        'success': True,
+                        'fhe_result': fhe_result,
+                        'contact_key': contact_key,
+                        'contact_info': contact_info
+                    })
                 else:
                     return jsonify({'error': '没有找到匹配的FHE记录'}), 404
                 
             except Exception as e:
-                logging.error(f"Respond to push error: {e}")
+                logging.error(f"Get FHE match results error: {e}")
                 return jsonify({'error': f'操作失败: {str(e)}'}), 500

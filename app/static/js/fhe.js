@@ -139,6 +139,8 @@ class FHE {
         // 1. 生成联系方式加密密钥
         const maxKey = 2n ** 128n < this.q ? 2n ** 128n : this.q;
         const contact_key_int = this.generateSecureRandom(1n, maxKey);
+
+        localStorage.setItem(`contact_key_${this.name}`, contact_key_int.toString());
         
         // 将密钥转换为16字节的Uint8Array (AES-128)
         const contact_key_bytes = new Uint8Array(16);
@@ -336,6 +338,7 @@ class FHE {
             
             console.log(`${this.name} 开始处理FHE匹配响应`);
             console.log('原始contact_info:', contact_info);
+            console.log('contact_info类型:', typeof contact_info);
             
             // 1. 解密匹配结果
             const fheResultCipher = [BigInt(fhe_result[0]), BigInt(fhe_result[1])];
@@ -353,51 +356,102 @@ class FHE {
                     // 解析加密的联系方式数据
                     let contactInfoData;
                     
-                    // 尝试不同的解析方式
                     if (typeof contact_info === 'string') {
-                        // 如果是字符串，尝试多种解析方式
-                        try {
-                            // 方式1: 直接JSON.parse
-                            contactInfoData = JSON.parse(contact_info);
-                        } catch (e1) {
+                        console.log('尝试解析字符串格式的contact_info');
+                        
+                        // 尝试多种解析方式
+                        let parseSuccess = false;
+                        
+                        // 方式1: 直接JSON解析
+                        if (!parseSuccess) {
                             try {
-                                // 方式2: 将Python字典格式转换为JSON格式
-                                const jsonStr = contact_info
-                                    .replace(/'/g, '"')  // 将单引号替换为双引号
-                                    .replace(/(\d+):/g, '"$1":');  // 给数字键加上引号
-                                contactInfoData = JSON.parse(jsonStr);
-                            } catch (e2) {
-                                // 方式3: 使用eval（注意：在生产环境中要谨慎使用）
-                                try {
-                                    contactInfoData = eval('(' + contact_info + ')');
-                                } catch (e3) {
-                                    console.error('所有解析方式都失败了:', e1.message, e2.message, e3.message);
-                                    throw new Error('无法解析contact_info数据');
-                                }
+                                contactInfoData = JSON.parse(contact_info);
+                                parseSuccess = true;
+                                console.log('方式1成功: JSON.parse');
+                            } catch (e1) {
+                                console.log('方式1失败:', e1.message);
                             }
                         }
-                    } else if (typeof contact_info === 'object') {
+                        
+                        // 方式2: Python字典格式转JSON
+                        if (!parseSuccess) {
+                            try {
+                                // 处理Python字典格式 {'0': 123, '1': 456, ...}
+                                let jsonStr = contact_info
+                                    .replace(/'/g, '"')  // 单引号转双引号
+                                    .replace(/(\d+):/g, '"$1":');  // 数字键加引号
+                                contactInfoData = JSON.parse(jsonStr);
+                                parseSuccess = true;
+                                console.log('方式2成功: Python字典转JSON');
+                            } catch (e2) {
+                                console.log('方式2失败:', e2.message);
+                            }
+                        }
+                        
+                        // 方式3: 处理数组字符串格式
+                        if (!parseSuccess) {
+                            try {
+                                // 如果是类似 "[123, 234, 156, ...]" 的格式
+                                if (contact_info.startsWith('[') && contact_info.endsWith(']')) {
+                                    const arrayData = JSON.parse(contact_info);
+                                    contactInfoData = {};
+                                    for (let i = 0; i < arrayData.length; i++) {
+                                        contactInfoData[i.toString()] = arrayData[i];
+                                    }
+                                    parseSuccess = true;
+                                    console.log('方式3成功: 数组格式转换');
+                                }
+                            } catch (e3) {
+                                console.log('方式3失败:', e3.message);
+                            }
+                        }
+                        
+                        // 方式4: 使用eval（最后的选择）
+                        if (!parseSuccess) {
+                            try {
+                                contactInfoData = eval('(' + contact_info + ')');
+                                parseSuccess = true;
+                                console.log('方式4成功: eval');
+                            } catch (e4) {
+                                console.log('方式4失败:', e4.message);
+                            }
+                        }
+                        
+                        if (!parseSuccess) {
+                            throw new Error('所有解析方式都失败了');
+                        }
+                        
+                    } else if (typeof contact_info === 'object' && contact_info !== null) {
                         // 如果已经是对象，直接使用
                         contactInfoData = contact_info;
+                        console.log('contact_info已经是对象格式');
                     } else {
-                        throw new Error('contact_info数据格式不支持');
+                        throw new Error(`不支持的contact_info格式: ${typeof contact_info}`);
                     }
                     
                     console.log('解析后的contactInfoData:', contactInfoData);
+                    console.log('contactInfoData的键:', Object.keys(contactInfoData));
                     
                     // 创建Uint8Array
                     const keys = Object.keys(contactInfoData);
-                    const encryptedContactBytes = new Uint8Array(keys.length);
+                    const maxIndex = Math.max(...keys.map(k => parseInt(k)).filter(n => !isNaN(n)));
+                    const encryptedContactBytes = new Uint8Array(maxIndex + 1);
                     
-                    for (let i = 0; i < keys.length; i++) {
-                        const key = keys[i];
+                    // 填充字节数组
+                    for (const key of keys) {
                         const index = parseInt(key);
                         if (!isNaN(index) && index >= 0 && index < encryptedContactBytes.length) {
-                            encryptedContactBytes[index] = contactInfoData[key];
+                            const value = contactInfoData[key];
+                            if (typeof value === 'number' && value >= 0 && value <= 255) {
+                                encryptedContactBytes[index] = value;
+                            } else {
+                                console.warn(`无效的字节值: ${key} -> ${value}`);
+                            }
                         }
                     }
                     
                     console.log('转换后的字节数组长度:', encryptedContactBytes.length);
+                    console.log('前10个字节:', Array.from(encryptedContactBytes.slice(0, 10)));
                     
                     // 解密联系方式
                     contactInfo = await this.decrypt_contact_info(contactKeyCipher, encryptedContactBytes, isMatch);

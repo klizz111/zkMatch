@@ -585,6 +585,9 @@
                 // 1. 获取原始加密数据
                 const result = await get_fhe_match_res(username);
                 
+                console.log('查询用户:', username);
+                console.log('从后端获取的原始数据:', result);
+                
                 if (!result || !result.success) {
                     resultContainer.innerHTML = `
                         <div class="alert alert-error">
@@ -638,7 +641,7 @@
                         <div class="match-result ${isMatch ? 'match-success' : 'match-failed'}">
                             <h5>🎯 匹配结果</h5>
                             <p class="match-status">
-                                ${isMatch ? '🎉 匹配成功！双方互相喜欢' : '💔 未匹配，至少有一方选择了拒绝'}
+                                ${isMatch ? '🎉 匹配成功！' : '💔 对方尚未进行匹配选择，或至少有一方选择了拒绝'}
                             </p>
                             <p class="decrypt-value">解密值: ${decryptedValue}</p>
                         </div>
