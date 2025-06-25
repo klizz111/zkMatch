@@ -349,20 +349,13 @@ class MatchingRoutes:
             data = request.get_json()
 
             db = self._get_db_manager()
-            push_id = data.get('push_id') 
+            itsusername = data.get('itsusername')
             
             try:
-                # 获取推送记录信息
-                push_records = db.execute_custom_sql(
-                    "SELECT * FROM push_records WHERE id = ? AND from_user = ?",
-                    (push_id, username)
-                )
+                to_user = itsusername 
                 
-                if not push_records:
-                    return jsonify({'error': '推送记录不存在'}), 404
-                
-                push = push_records[0]
-                to_user = push['to_user']
+                if not to_user:
+                    return jsonify({'error': 'Invalid itsusername'}), 400
                 
                 existing_fhe = db.execute_custom_sql(
                     "SELECT * FROM fhe_records WHERE (username1 = ? AND username2 = ?) OR (username1 = ? AND username2 = ?)",

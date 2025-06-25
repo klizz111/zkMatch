@@ -324,5 +324,106 @@ class FHE {
             return null;
         }
     }   
-    
+
+    /**
+     * 处理从后端返回的FHE匹配结果
+     * @param {Object} responseData - 后端返回的数据
+     * @returns {Object} 解密后的结果
+     */
+    async processFheMatchResponse(responseData) {
+        try {
+            const { fhe_result, contact_key, contact_info } = responseData;
+            
+            console.log(`${this.name} 开始处理FHE匹配响应`);
+            console.log('原始contact_info:', contact_info);
+            
+            // 1. 解密匹配结果
+            const fheResultCipher = [BigInt(fhe_result[0]), BigInt(fhe_result[1])];
+            const [isMatch, decryptedValue] = this.decrypt_result(fheResultCipher);
+            
+            console.log(`匹配结果: ${isMatch ? '成功匹配' : '未匹配'}`);
+            
+            // 2. 如果匹配成功，解密联系方式
+            let contactInfo = null;
+            if (isMatch) {
+                try {
+                    // 解析联系方式密文密钥
+                    const contactKeyCipher = [BigInt(contact_key[0]), BigInt(contact_key[1])];
+                    
+                    // 解析加密的联系方式数据
+                    let contactInfoData;
+                    
+                    // 尝试不同的解析方式
+                    if (typeof contact_info === 'string') {
+                        // 如果是字符串，尝试多种解析方式
+                        try {
+                            // 方式1: 直接JSON.parse
+                            contactInfoData = JSON.parse(contact_info);
+                        } catch (e1) {
+                            try {
+                                // 方式2: 将Python字典格式转换为JSON格式
+                                const jsonStr = contact_info
+                                    .replace(/'/g, '"')  // 将单引号替换为双引号
+                                    .replace(/(\d+):/g, '"$1":');  // 给数字键加上引号
+                                contactInfoData = JSON.parse(jsonStr);
+                            } catch (e2) {
+                                // 方式3: 使用eval（注意：在生产环境中要谨慎使用）
+                                try {
+                                    contactInfoData = eval('(' + contact_info + ')');
+                                } catch (e3) {
+                                    console.error('所有解析方式都失败了:', e1.message, e2.message, e3.message);
+                                    throw new Error('无法解析contact_info数据');
+                                }
+                            }
+                        }
+                    } else if (typeof contact_info === 'object') {
+                        // 如果已经是对象，直接使用
+                        contactInfoData = contact_info;
+                    } else {
+                        throw new Error('contact_info数据格式不支持');
+                    }
+                    
+                    console.log('解析后的contactInfoData:', contactInfoData);
+                    
+                    // 创建Uint8Array
+                    const keys = Object.keys(contactInfoData);
+                    const encryptedContactBytes = new Uint8Array(keys.length);
+                    
+                    for (let i = 0; i < keys.length; i++) {
+                        const key = keys[i];
+                        const index = parseInt(key);
+                        if (!isNaN(index) && index >= 0 && index < encryptedContactBytes.length) {
+                            encryptedContactBytes[index] = contactInfoData[key];
+                        }
+                    }
+                    
+                    console.log('转换后的字节数组长度:', encryptedContactBytes.length);
+                    
+                    // 解密联系方式
+                    contactInfo = await this.decrypt_contact_info(contactKeyCipher, encryptedContactBytes, isMatch);
+                    
+                    if (contactInfo) {
+                        console.log(`成功解密联系方式: ${contactInfo}`);
+                    } else {
+                        console.log(`联系方式解密失败`);
+                    }
+                } catch (e) {
+                    console.error(`解密联系方式时出错: ${e.message}`);
+                    console.error('错误堆栈:', e.stack);
+                    contactInfo = null;
+                }
+            }
+            
+            return {
+                isMatch: isMatch,
+                decryptedValue: decryptedValue.toString(),
+                contactInfo: contactInfo,
+                rawResult: responseData
+            };
+            
+        } catch (error) {
+            console.error(`处理FHE匹配响应时出错: ${error.message}`);
+            throw error;
+        }
+    }
 }

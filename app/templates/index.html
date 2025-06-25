@@ -541,64 +541,137 @@
         
         // 加载匹配列表
         async function loadMatches() {
+            const contentEl = document.getElementById('matchesContent');
+            
+            contentEl.innerHTML = `
+                <div class="fhe-match-section">
+                    <h3>🔒 FHE匹配结果查询</h3>
+                    <div class="fhe-controls">
+                        <div class="form-group">
+                            <label for="fheUsername">对方用户名:</label>
+                            <input type="text" id="fheUsername" placeholder="输入对方的用户名">
+                        </div>
+                        <button class="btn btn-primary" onclick="handleFheMatchQuery()">查询FHE匹配结果</button>
+                    </div>
+                    <div id="fheResultDisplay" class="fhe-result-container">
+                        <!-- 结果将在这里显示 -->
+                    </div>
+                </div>
+            `;
+        }
+        
+        // 处理FHE匹配查询
+        async function handleFheMatchQuery() {
+            const username = document.getElementById('fheUsername').value;
+            const resultContainer = document.getElementById('fheResultDisplay');
+            
+            if (!username) {
+                resultContainer.innerHTML = `
+                    <div class="alert alert-warning">
+                        ⚠️ 请输入对方的用户名
+                    </div>
+                `;
+                return;
+            }
+            
+            // 显示加载状态
+            resultContainer.innerHTML = `
+                <div class="loading">
+                    🔄 正在查询FHE匹配结果...
+                </div>
+            `;
+            
             try {
-                const response = await fetch('/api/my_matches', {
-                    headers: {
-                        'Authorization': `Bearer ${currentSession}`
-                    }
-                });
+                // 1. 获取原始加密数据
+                const result = await get_fhe_match_res(username);
                 
-                const data = await response.json();
-                const contentEl = document.getElementById('matchesContent');
-                
-                if (data.success) {
-                    if (data.matches.length > 0) {
-                        contentEl.innerHTML = data.matches.map(match => {
-                            // 从本地存储获取自己的联系方式
-                            const myContactInfo = getLocalContactInfo();
-                            
-                            return `
-                            <div class="match-card">
-                                <h3>💕 ${match.matched_user.nickname}</h3>
-                                <div class="info-grid">
-                                    <div class="info-item">
-                                        <strong>年龄</strong>
-                                        <span>${match.matched_user.age || '未知'}</span>
-                                    </div>
-                                    <div class="info-item">
-                                        <strong>性别</strong>
-                                        <span>${getGenderText(match.matched_user.gender)}</span>
-                                    </div>
-                                    <div class="info-item">
-                                        <strong>匹配日期</strong>
-                                        <span>${match.match_date}</span>
-                                    </div>
-                                </div>
-                                ${match.matched_user.bio ? `<p><strong>个人简介：</strong>${match.matched_user.bio}</p>` : ''}
-                                ${myContactInfo ? `<p><strong>我的联系方式：</strong>${myContactInfo}</p>` : ''}
-                                ${match.matched_user.contact_info ? `<p><strong>TA的联系方式：</strong>${match.matched_user.contact_info}</p>` : ''}
-                            </div>
-                        `;
-                        }).join('');
-                    } else {
-                        contentEl.innerHTML = `
-                            <div class="empty-state">
-                                <h3>💔 暂无匹配</h3>
-                                <p>继续浏览推送，寻找你的另一半吧！</p>
-                            </div>
-                        `;
-                    }
-                } else {
-                    contentEl.innerHTML = `
-                        <div class="alert alert-error">加载失败: ${data.error}</div>
+                if (!result || !result.success) {
+                    resultContainer.innerHTML = `
+                        <div class="alert alert-error">
+                            ❌ 未能获取到有效的FHE匹配结果
+                        </div>
                     `;
+                    return;
                 }
+                
+                // 2. 初始化FHE并解密数据
+                const fhe = new FHE(currentUser);
+                fhe.load_params();
+                
+                // 计算共享密钥（需要对方的公钥）
+                const user_y = localStorage.getItem(`${username}_y`);
+                if (!user_y) {
+                    resultContainer.innerHTML = `
+                        <div class="alert alert-error">
+                            ❌ 缺少与用户 ${username} 的密钥交换信息，请先与该用户进行匹配操作
+                        </div>
+                    `;
+                    return;
+                }
+                
+                await fhe.compute_shared_secret(user_y);
+                
+                // 3. 解密FHE结果
+                const decryptedResult = await fhe.processFheMatchResponse(result);
+                
+                // 4. 显示解密后的结果
+                displayDecryptedResult(resultContainer, username, decryptedResult);
+                
             } catch (error) {
-                console.error('加载匹配失败:', error);
-                contentEl.innerHTML = `
-                    <div class="alert alert-error">加载失败: ${error.message}</div>
+                console.error('查询FHE匹配结果失败:', error);
+                resultContainer.innerHTML = `
+                    <div class="alert alert-error">
+                        ❌ 查询失败: ${error.message}
+                    </div>
                 `;
             }
+        }
+        
+        // 显示解密后的结果
+        function displayDecryptedResult(container, username, decryptedResult) {
+            const { isMatch, decryptedValue, contactInfo, rawResult } = decryptedResult;
+            
+            let resultHtml = `
+                <div class="fhe-result-success">
+                    <h4>✅ FHE匹配结果解密完成</h4>
+                    <div class="result-content">
+                        <div class="match-result ${isMatch ? 'match-success' : 'match-failed'}">
+                            <h5>🎯 匹配结果</h5>
+                            <p class="match-status">
+                                ${isMatch ? '🎉 匹配成功！双方互相喜欢' : '💔 未匹配，至少有一方选择了拒绝'}
+                            </p>
+                            <p class="decrypt-value">解密值: ${decryptedValue}</p>
+                        </div>
+            `;
+            
+            if (isMatch && contactInfo) {
+                resultHtml += `
+                        <div class="contact-info match-success">
+                            <h5>📞 联系方式</h5>
+                            <p class="contact-text">${contactInfo}</p>
+                            <p class="contact-hint">🔒 联系方式已安全解密，仅在双方匹配成功时可见</p>
+                        </div>
+                `;
+            } else if (isMatch && !contactInfo) {
+                resultHtml += `
+                        <div class="contact-info contact-error">
+                            <h5>📞 联系方式</h5>
+                            <p class="contact-error">⚠️ 无法解密联系方式或对方未提供联系方式</p>
+                        </div>
+                `;
+            }
+            
+            // 显示原始数据（调试用）
+            resultHtml += `
+                        <details class="raw-data">
+                            <summary>🔍 查看原始加密数据</summary>
+                            <pre style="background: #f5f5f5; padding: 15px; border-radius: 5px; overflow-x: auto; font-size: 12px;">${JSON.stringify(rawResult, null, 2)}</pre>
+                        </details>
+                    </div>
+                </div>
+            `;
+            
+            container.innerHTML = resultHtml;
         }
         
         // 本地存储联系方式的相关函数
@@ -837,31 +910,32 @@
             return educationMap[education] || '未知';
         }
 
-        async function get_fhe_match_res(push_id, username) {
-            try{
-                response = await fetch('/api/fhe_match_results', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${currentSession}`
-                },
-                body: JSON.stringify({
-                    push_id: push_id,
-                    username: username
-                })
+        async function get_fhe_match_res(itsusername) {
+            try {
+                const response = await fetch('/api/fhe_match_results', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${currentSession}`
+                    },
+                    body: JSON.stringify({
+                        itsusername: itsusername
+                    })
                 });
-            }
-          
-            catch (error) {
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    console.log('获取FHE匹配结果:', data);
+                    return data; // 返回完整的响应数据
+                } else {
+                    console.error('获取FHE匹配结果失败:', data.error);
+                    return null;
+                }
+            } catch (error) {
                 console.error('获取FHE匹配结果失败:', error);
-                return null;
+                throw error; // 抛出错误以便上层处理
             }
-
-            if (!response.sucess) {
-                console.error('获取FHE匹配结果失败:', response.error);
-                return null;
-            }
-            console.log('获取FHE匹配结果:', response);
         }
     </script>
 </body>

@@ -359,3 +359,86 @@ body {
         grid-template-columns: 1fr;
     }
 }
+
+.match-result {
+    margin: 15px 0;
+    padding: 15px;
+    border-radius: 8px;
+    border-left: 4px solid;
+}
+
+.match-result.match-success {
+    background-color: #d4edda;
+    border-color: #28a745;
+    color: #155724;
+}
+
+.match-result.match-failed {
+    background-color: #f8d7da;
+    border-color: #dc3545;
+    color: #721c24;
+}
+
+.match-status {
+    font-size: 16px;
+    font-weight: bold;
+    margin: 10px 0;
+}
+
+.decrypt-value {
+    font-family: monospace;
+    font-size: 12px;
+    color: #666;
+    margin: 5px 0;
+}
+
+.contact-info {
+    margin: 15px 0;
+    padding: 15px;
+    border-radius: 8px;
+    border-left: 4px solid;
+}
+
+.contact-info.match-success {
+    background-color: #d1ecf1;
+    border-color: #17a2b8;
+    color: #0c5460;
+}
+
+.contact-info.contact-error {
+    background-color: #fff3cd;
+    border-color: #ffc107;
+    color: #856404;
+}
+
+.contact-text {
+    font-size: 16px;
+    font-weight: bold;
+    margin: 10px 0;
+    padding: 8px;
+    background-color: rgba(255, 255, 255, 0.5);
+    border-radius: 4px;
+}
+
+.contact-hint {
+    font-size: 12px;
+    color: #666;
+    margin: 5px 0;
+}
+
+.raw-data {
+    margin-top: 20px;
+    border-top: 1px solid #dee2e6;
+    padding-top: 15px;
+}
+
+.raw-data summary {
+    cursor: pointer;
+    font-weight: bold;
+    color: #007bff;
+    margin-bottom: 10px;
+}
+
+.raw-data summary:hover {
+    color: #0056b3;
+}
