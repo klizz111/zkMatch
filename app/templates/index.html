@@ -151,18 +151,35 @@
                         <div class="form-row">
                             <div class="form-group">
                                 <label for="minHeight">最小身高 (cm)</label>
-                                <input type="number" id="minHeight" name="min_height" min="150" max="200">
+                                <input type="number" id="minHeight" name="min_height" >
                             </div>
                             <div class="form-group">
                                 <label for="maxHeight">最大身高 (cm)</label>
-                                <input type="number" id="maxHeight" name="max_height" min="150" max="200">
+                                <input type="number" id="maxHeight" name="max_height" >
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="minHeight">最小体重 (kg)</label>
+                                <input type="number" id="minHeight" name="min_height">
+                            </div>
+                            <div class="form-group">
+                                <label for="maxHeight">最大体重 (kg)</label>
+                                <input type="number" id="maxHeight" name="max_height" >
                             </div>
                         </div>
 
                         <div class="form-group">
-                            <label for="dealBreakers">拒绝条件</label>
-                            <textarea id="dealBreakers" name="deal_breakers" placeholder="描述你的拒绝条件..."></textarea>
+                            <label for="preferredGender">期望学历</label>
+                            <select id="preferredGender" name="preferred_gender">
+                                <option value="">无偏好</option>
+                                <option value="male">本科</option>
+                                <option value="female">硕士</option>
+                                <option value="other">博士</option>
+                            </select>
                         </div>
+
 
                         <button type="submit" class="btn">保存偏好</button>
                     </form>
@@ -235,7 +252,7 @@
                 document.getElementById('currentUser').textContent = `欢迎，${currentUser}`;
 
                 // 加载初始数据
-                await loadStats();
+                // await loadStats();
                 await loadDashboard();
 
             } catch (error) {
@@ -470,12 +487,69 @@
                     document.getElementById('maxAge').value = prefs.max_age || '';
                     document.getElementById('minHeight').value = prefs.min_height || '';
                     document.getElementById('maxHeight').value = prefs.max_height || '';
+                    document.getElementById('minWeight').value = prefs.min_weight || '';
+                    document.getElementById('maxWeight').value = prefs.max_weight || '';
+                    document.getElementById('preferredEducation').value = prefs.preferred_education || '';
                     document.getElementById('dealBreakers').value = prefs.deal_breakers || '';
                 }
             } catch (error) {
                 console.error('加载匹配偏好失败:', error);
             }
         }
+
+        // 保存匹配偏好
+        document.getElementById('preferencesForm').addEventListener('submit', async function (e) {
+            e.preventDefault();
+
+            const formData = new FormData(this);
+            const prefsData = Object.fromEntries(formData);
+
+            // 转换数值类型
+            if (prefsData.min_age) prefsData.min_age = parseInt(prefsData.min_age);
+            if (prefsData.max_age) prefsData.max_age = parseInt(prefsData.max_age);
+            if (prefsData.min_height) prefsData.min_height = parseInt(prefsData.min_height);
+            if (prefsData.max_height) prefsData.max_height = parseInt(prefsData.max_height);
+            if (prefsData.min_weight) prefsData.min_weight = parseFloat(prefsData.min_weight);
+            if (prefsData.max_weight) prefsData.max_weight = parseFloat(prefsData.max_weight);
+
+            // 简单的验证
+            if (prefsData.min_age && prefsData.max_age && prefsData.min_age > prefsData.max_age) {
+                alert('⚠️ 最小年龄不能大于最大年龄');
+                return;
+            }
+
+            if (prefsData.min_height && prefsData.max_height && prefsData.min_height > prefsData.max_height) {
+                alert('⚠️ 最小身高不能大于最大身高');
+                return;
+            }
+
+            if (prefsData.min_weight && prefsData.max_weight && prefsData.min_weight > prefsData.max_weight) {
+                alert('⚠️ 最小体重不能大于最大体重');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/match_preferences', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${currentSession}`
+                    },
+                    body: JSON.stringify(prefsData)
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    alert('✅ 匹配偏好保存成功！');
+                } else {
+                    alert('❌ 保存失败: ' + data.error);
+                }
+            } catch (error) {
+                alert('❌ 保存失败: ' + error.message);
+            }
+        });
+
 
         // 加载推送列表
         async function loadPushes() {
@@ -492,7 +566,7 @@
                 if (data.success) {
                     if (data.pushes.length > 0) {
                         const push = data.pushes[0];
-                        const user_y = `${push.user_info.username}_y`;
+                        const user_y = `${push.user_info.nickname}_y`;
                         localStorage.setItem(user_y, push.user_info.user_y);
                         contentEl.innerHTML = `
                             <div class="current-push">
@@ -751,7 +825,7 @@
 
                 if (data.success) {
                     alert('✅ 个人资料更新成功！');
-                    await loadStats();
+                    // await loadStats();
                     if (data.profile_complete) {
                         await loadDashboard();
                     }
@@ -763,40 +837,6 @@
             }
         });
 
-        // 保存匹配偏好
-        document.getElementById('preferencesForm').addEventListener('submit', async function (e) {
-            e.preventDefault();
-
-            const formData = new FormData(this);
-            const prefsData = Object.fromEntries(formData);
-
-            // 转换数值类型
-            if (prefsData.min_age) prefsData.min_age = parseInt(prefsData.min_age);
-            if (prefsData.max_age) prefsData.max_age = parseInt(prefsData.max_age);
-            if (prefsData.min_height) prefsData.min_height = parseInt(prefsData.min_height);
-            if (prefsData.max_height) prefsData.max_height = parseInt(prefsData.max_height);
-
-            try {
-                const response = await fetch('/api/match_preferences', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${currentSession}`
-                    },
-                    body: JSON.stringify(prefsData)
-                });
-
-                const data = await response.json();
-
-                if (data.success) {
-                    alert('✅ 匹配偏好保存成功！');
-                } else {
-                    alert('❌ 保存失败: ' + data.error);
-                }
-            } catch (error) {
-                alert('❌ 保存失败: ' + error.message);
-            }
-        });
 
         // 生成新推送
         async function generatePushes() {
@@ -812,7 +852,7 @@
 
                 if (data.success) {
                     alert(`✅ ${data.message}`);
-                    await loadStats();
+                    // await loadStats();
                     await loadPushes();
                 } else {
                     alert('❌ ' + data.message);

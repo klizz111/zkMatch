@@ -67,6 +67,9 @@ class DatabaseManager:
                                 max_age INTEGER,
                                 min_height INTEGER,
                                 max_height INTEGER,
+                                min_weight REAL,
+                                max_weight REAL,
+                                preferred_education TEXT,
                                 deal_breakers TEXT,
                                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -458,27 +461,80 @@ class DatabaseManager:
             return 0
     
     # 匹配系统相关方法
-    def set_match_preferences(self, username: str, preferences: dict) -> bool:
-        """设置用户匹配偏好"""
+    def set_match_preferences(self, username: str, preferences: dict[str, Any]) -> dict[str, Any]:
+        """设置匹配偏好"""
         try:
-            # 检查是否已存在偏好设置
-            existing = self.select('match_preferences', 'username = ?', (username,))
+            # 检查现有偏好记录
+            existing_prefs = self.select('match_preferences', 'username = ?', (username,))
             
-            preferences['username'] = username
-            preferences['updated_at'] = datetime.datetime.now().isoformat()
+            # 准备数据
+            valid_preferences = {}
+            valid_preferences['username'] = username
+            valid_preferences['updated_at'] = datetime.datetime.now().isoformat()
             
-            if existing:
-                # 更新现有偏好
-                self.update('match_preferences', preferences, 'username = ?', (username,))
+            # 允许设置的偏好字段
+            allowed_prefs = ['preferred_gender', 'min_age', 'max_age', 
+                           'min_height', 'max_height', 'min_weight', 'max_weight',
+                           'preferred_education', 'deal_breakers']
+            
+            for field in allowed_prefs:
+                if field in preferences:
+                    value = preferences[field]
+                    # 数值类型转换和验证
+                    if field in ['min_age', 'max_age', 'min_height', 'max_height']:
+                        if value is not None and value != '':
+                            try:
+                                valid_preferences[field] = int(value)
+                            except (ValueError, TypeError):
+                                return {'success': False, 'error': f'Invalid value for {field}'}
+                        else:
+                            valid_preferences[field] = None
+                    elif field in ['min_weight', 'max_weight']:
+                        if value is not None and value != '':
+                            try:
+                                valid_preferences[field] = float(value)
+                            except (ValueError, TypeError):
+                                return {'success': False, 'error': f'Invalid value for {field}'}
+                        else:
+                            valid_preferences[field] = None
+                    else:
+                        valid_preferences[field] = value if value != '' else None
+            
+            # 添加逻辑验证
+            if (valid_preferences.get('min_age') and valid_preferences.get('max_age') and 
+                valid_preferences['min_age'] > valid_preferences['max_age']):
+                return {'success': False, 'error': 'Minimum age cannot be greater than maximum age'}
+            
+            if (valid_preferences.get('min_height') and valid_preferences.get('max_height') and 
+                valid_preferences['min_height'] > valid_preferences['max_height']):
+                return {'success': False, 'error': 'Minimum height cannot be greater than maximum height'}
+            
+            if (valid_preferences.get('min_weight') and valid_preferences.get('max_weight') and 
+                valid_preferences['min_weight'] > valid_preferences['max_weight']):
+                return {'success': False, 'error': 'Minimum weight cannot be greater than maximum weight'}
+            
+            # 更新或插入偏好
+            if existing_prefs:
+                # 更新现有记录
+                update_data = {k: v for k, v in valid_preferences.items() if k != 'username'}
+                rows_affected = self.update('match_preferences', update_data, 'username = ?', (username,))
+                success = rows_affected > 0
             else:
-                # 创建新的偏好设置
-                preferences['created_at'] = datetime.datetime.now().isoformat()
-                self.insert('match_preferences', preferences)
+                # 插入新记录
+                self.insert('match_preferences', valid_preferences)
+                success = True
             
-            return True
-        except sqlite3.Error as e:
+            if success:
+                return {
+                    'success': True,
+                    'message': 'Preferences updated successfully'
+                }
+            else:
+                return {'success': False, 'error': 'Failed to update preferences'}
+                
+        except Exception as e:
             logging.error(f"Set match preferences error: {e}")
-            return False
+            return {'success': False, 'error': str(e)}
     
     def get_match_preferences(self, username: str) -> Optional[dict]:
         """获取用户匹配偏好"""
@@ -491,18 +547,7 @@ class DatabaseManager:
             logging.error(f"Get match preferences error: {e}")
             return None
     
-    def get_match_preferences(self, username: str) -> Optional[dict]:
-        """获取用户匹配偏好"""
-        try:
-            prefs = self.select('match_preferences', 'username = ?', (username,))
-            if prefs:
-                return dict(prefs[0])
-            return None
-        except sqlite3.Error as e:
-            logging.error(f"Get match preferences error: {e}")
-            return None
-    
-    def get_potential_matches(self, username: str, limit: int = 10) -> List[dict]:
+    def get_potential_matches(self, username: str, limit: int = 10) -> list[dict]:
         """获取潜在匹配对象"""
         try:
             # 获取用户信息和偏好
@@ -538,6 +583,18 @@ class DatabaseManager:
                 if prefs.get('max_height'):
                     conditions.append("height <= ?")
                     params.append(prefs['max_height'])
+                
+                if prefs.get('min_weight'):
+                    conditions.append("weight >= ?")
+                    params.append(prefs['min_weight'])
+                
+                if prefs.get('max_weight'):
+                    conditions.append("weight <= ?")
+                    params.append(prefs['max_weight'])
+                
+                if prefs.get('preferred_education'):
+                    conditions.append("education = ?")
+                    params.append(prefs['preferred_education'])
             
             # 排除已经推送过的用户（今天）
             today = datetime.date.today().isoformat()
@@ -586,7 +643,7 @@ class DatabaseManager:
             logging.error(f"Create push record error: {e}")
             return False
     
-    def get_pending_pushes(self, username: str) -> List[dict]:
+    def get_pending_pushes(self, username: str) -> list[dict]:
         """获取用户待处理的推送（每次只返回一条）"""
         try:
             # 获取待处理的推送，按创建时间排序，只取第一条
@@ -615,7 +672,6 @@ class DatabaseManager:
                         'gender': user_data['gender'],
                         'height': user_data['height'],
                         'education': user_data['education'],
-                        # 'occupation': user_data['occupation'],
                         'hobbies': user_data['hobbies'],
                         'bio': user_data['bio'],
                         'user_y': user_y 
@@ -631,7 +687,7 @@ class DatabaseManager:
             logging.error(f"Get pending pushes error: {e}")
             return []
   
-    def get_user_matches(self, username: str) -> List[dict]:
+    def get_user_matches(self, username: str) -> list[dict]:
         """获取用户的匹配列表"""
         try:
             matches = self.execute_custom_sql(
@@ -658,7 +714,7 @@ class DatabaseManager:
                             'age': user_data['age'],
                             'gender': user_data['gender'],
                             'bio': user_data['bio'],
-                            'contact_info': user_data['contact_info']
+                            'contact_info': user_data.get('contact_info', '')
                         },
                         'match_date': match['match_date']
                     })

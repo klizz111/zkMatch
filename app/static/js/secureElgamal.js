@@ -178,7 +178,6 @@ class SecureElGamal {
                 timestamp: Date.now()
             };
             
-            // 简单的混淆（实际应用中应使用更强的加密）
             const encodedData = btoa(JSON.stringify(keyData));
             localStorage.setItem(`zk_key_${username}`, encodedData);
         } catch (error) {
