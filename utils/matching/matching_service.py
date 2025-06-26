@@ -70,19 +70,7 @@ class MatchingService:
         except Exception as e:
             logging.error(f"Generate daily pushes error: {e}")
             return {'success': False, 'error': str(e)}
-    
-    def respond_to_push(self, username: str, push_id: int, response: str) -> Dict[str, Any]:
-        """响应推送（接受/拒绝）"""
-        try:
-            if response not in ['accepted', 'rejected']:
-                return {'success': False, 'error': 'Invalid response'}
-            
-            result = self.db.respond_to_push(username, push_id, response)
-            return result
-            
-        except Exception as e:
-            logging.error(f"Respond to push error: {e}")
-            return {'success': False, 'error': str(e)}
+
     
     def get_user_matches(self, username: str) -> Dict[str, Any]:
         """获取用户的匹配列表"""

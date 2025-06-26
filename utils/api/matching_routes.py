@@ -154,6 +154,9 @@ class MatchingRoutes:
                 if not push_records:
                     return jsonify({'error': '推送记录不存在'}), 404
                 
+                # 将status标记为accepted
+                db.update('push_records', {'status': 'accepted'}, 'id = ?', (push_id,))
+                
                 push = push_records[0]
                 to_user = push['to_user']
                 
@@ -341,6 +344,68 @@ class MatchingRoutes:
                 return jsonify(result)
             else:
                 return jsonify(result), 500
+            
+        @self.app.route('/api/push_history', methods=['GET'])
+        @self.require_session   
+        def get_push_history():
+            """获取推送历史记录"""
+            username = g.current_user
+            db = self._get_db_manager()
+            
+            # 查询条件：from_user为current_user/status为accepted
+            push_records = db.execute_custom_sql(
+                "SELECT * FROM push_records WHERE from_user = ? AND status = 'accepted' ORDER BY created_at DESC",
+                (username,)
+            )
+            
+            # push_records中获取to_user
+            if not push_records:
+                return jsonify({'error': '没有找到推送记录'}), 404
+            
+            uname_list = []
+            for record in push_records:
+                to_user = record['to_user']
+                if to_user not in uname_list:
+                    uname_list.append(to_user)
+                    
+            # 获取用户信息 - 修改为获取实际存在的字段
+            user_profiles = db.execute_custom_sql(
+                "SELECT username, nickname, age, gender, height, weight, education, hobbies, bio FROM user_data WHERE username IN ({})".format(
+                    ','.join(['?'] * len(uname_list))
+                ),
+                tuple(uname_list)
+            )
+            
+            # 构建用户信息映射
+            user_info_map = {}
+            for user in user_profiles:
+                user_info_map[user['username']] = {
+                    'username': user['username'],
+                    'nickname': user['nickname'],
+                    'age': user['age'],
+                    'gender': user['gender'],
+                    'height': user['height'],
+                    'weight': user['weight'],
+                    'education': user['education'],
+                    'hobbies': user['hobbies'],
+                    'bio': user['bio']
+                }
+            
+            # 构建返回结果
+            result = []
+            for record in push_records:
+                to_user = record['to_user']
+                user_info = user_info_map.get(to_user, {})
+                
+                result.append({
+                    'push_id': record['id'],
+                    'to_user': to_user,
+                    'status': record['status'],
+                    'created_at': record['created_at'],
+                    'user_info': user_info
+                })
+            return jsonify(result)
+                
             
         @self.app.route('/api/fhe_match_results', methods=['POST'])
         @self.require_session

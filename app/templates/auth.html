@@ -149,7 +149,7 @@
             container.innerHTML = `
                 <div class="left-panel">
                     <h1>🎉 登录成功</h1>
-                    <p>欢迎使用零知识证明登录系统！</p>
+                    <p>欢迎使用！</p>
                     <br>
                     <p>✅ Session已建立<br>
                     🔒 24小时有效期<br>
@@ -312,7 +312,7 @@
                 return;
             }
             
-            resultDiv.innerHTML = '<div class="loading">正在进行零知识证明登录...</div>';
+            resultDiv.innerHTML = '<div class="loading">正在登录...</div>';
             
             try {
                 const result = await secureElgamal.zkLogin(username, seed);

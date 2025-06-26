@@ -883,6 +883,37 @@
             }
         }
         
+        // 加载匹配历史
+        async function get_history() {
+            let response;
+            try {
+                response = await fetch('/api/push_history', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${currentSession}`
+                    }
+                }); 
+        
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(data.error || `HTTP error! status: ${response.status}`);
+                }
+        
+                return data;
+            } catch (error) {
+                if (!response) {
+                    console.error('网络请求失败:', error);
+                    alert('网络请求失败: ' + error.message);
+                } else {
+                    console.error('获取历史记录失败:', error);
+                    alert('获取历史记录失败: ' + error.message);
+                }
+                throw error; 
+            }
+        }
+
         // 辅助函数
         function getFieldName(field) {
             const fieldNames = {

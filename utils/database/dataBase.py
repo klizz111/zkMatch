@@ -549,21 +549,6 @@ class DatabaseManager:
             )""")
             params.extend([username, today])
             
-            # 排除已经匹配的用户
-            conditions.append("""username NOT IN (
-                SELECT CASE 
-                    WHEN user1 = ? THEN user2 
-                    ELSE user1 
-                END
-                FROM matches 
-                WHERE (user1 = ? OR user2 = ?) AND status = 'active'
-            )""")
-            params.extend([username, username, username])
-            
-            where_clause = " AND ".join(conditions)
-            sql = f"SELECT * FROM user_data WHERE {where_clause} ORDER BY RANDOM() LIMIT ?"
-            params.append(limit)
-            
             matches = self.execute_custom_sql(sql, tuple(params))
             return [dict(match) for match in matches] if matches else []
             
@@ -643,69 +628,7 @@ class DatabaseManager:
         except sqlite3.Error as e:
             logging.error(f"Get pending pushes error: {e}")
             return []
-    
-    def respond_to_push(self, username: str, push_id: int, response: str) -> dict:
-        """响应推送（接受/拒绝）"""
-        try:
-            # 获取推送记录
-            push_records = self.execute_custom_sql(
-                "SELECT * FROM push_records WHERE id = ? AND from_user = ?",
-                (push_id, username)
-            )
-            
-            if not push_records:
-                return {'success': False, 'message': '推送记录不存在'}
-            
-            push = push_records[0]
-            to_user = push['to_user']
-            
-            # 更新推送状态
-            self.update('push_records', 
-                       {'status': response, 'responded_at': datetime.datetime.now().isoformat()},
-                       'id = ?', 
-                       (push_id,))
-            
-            # 记录用户互动
-            interaction_data = {
-                'from_user': username,
-                'to_user': to_user,
-                'interaction_type': 'like' if response == 'accepted' else 'skip'
-            }
-            self.insert('user_interactions', interaction_data)
-            
-            # 检查是否双方都接受了
-            if response == 'accepted':
-                # 查看对方是否也接受了
-                other_push = self.execute_custom_sql(
-                    "SELECT * FROM push_records WHERE from_user = ? AND to_user = ? AND push_date = ?",
-                    (to_user, username, push['push_date'])
-                )
-                
-                if other_push and other_push[0]['status'] == 'accepted':
-                    # 双方都接受，创建匹配
-                    user1, user2 = sorted([username, to_user])  # 保证顺序一致
-                    match_data = {
-                        'user1': user1,
-                        'user2': user2,
-                        'match_date': datetime.date.today().isoformat(),
-                        'status': 'active'
-                    }
-                    
-                    try:
-                        self.insert('matches', match_data)
-                        return {'success': True, 'message': '匹配成功！', 'matched': True}
-                    except sqlite3.IntegrityError:
-                        # 匹配记录已存在
-                        return {'success': True, 'message': '匹配成功！', 'matched': True}
-                else:
-                    return {'success': True, 'message': '已接受，等待对方回应', 'matched': False}
-            else:
-                return {'success': True, 'message': '已拒绝', 'matched': False}
-                
-        except sqlite3.Error as e:
-            logging.error(f"Respond to push error: {e}")
-            return {'success': False, 'message': f'操作失败: {str(e)}'}
-    
+  
     def get_user_matches(self, username: str) -> List[dict]:
         """获取用户的匹配列表"""
         try:
@@ -790,7 +713,6 @@ def example_usage():
     """数据库使用示例"""
     db_path = "example.db"
     
-    # 使用上下文管理器自动处理连接
     with DatabaseManager(db_path) as db:
         db.initialize()
         
