@@ -95,19 +95,6 @@ class DatabaseManager:
                                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP"""
                 )
                 
-                # 匹配结果表
-                self.create_table("matches",
-                                """id INTEGER PRIMARY KEY AUTOINCREMENT,
-                                user1 TEXT NOT NULL,
-                                user2 TEXT NOT NULL,
-                                match_date DATE NOT NULL,
-                                status TEXT DEFAULT 'active' CHECK(status IN ('active', 'inactive', 'blocked')),
-                                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                                FOREIGN KEY (user1) REFERENCES user_data(username),
-                                FOREIGN KEY (user2) REFERENCES user_data(username),
-                                UNIQUE(user1, user2)"""
-                )
-                
                 # fhe相关
                 # fhe_records 存储用户交互记录
                 """id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -504,6 +491,17 @@ class DatabaseManager:
             logging.error(f"Get match preferences error: {e}")
             return None
     
+    def get_match_preferences(self, username: str) -> Optional[dict]:
+        """获取用户匹配偏好"""
+        try:
+            prefs = self.select('match_preferences', 'username = ?', (username,))
+            if prefs:
+                return dict(prefs[0])
+            return None
+        except sqlite3.Error as e:
+            logging.error(f"Get match preferences error: {e}")
+            return None
+    
     def get_potential_matches(self, username: str, limit: int = 10) -> List[dict]:
         """获取潜在匹配对象"""
         try:
@@ -548,6 +546,10 @@ class DatabaseManager:
                 WHERE from_user = ? AND push_date = ?
             )""")
             params.extend([username, today])
+            
+            where_clause = " AND ".join(conditions)
+            sql = f"SELECT * FROM user_data WHERE {where_clause} ORDER BY RANDOM() LIMIT ?"
+            params.append(limit)
             
             matches = self.execute_custom_sql(sql, tuple(params))
             return [dict(match) for match in matches] if matches else []

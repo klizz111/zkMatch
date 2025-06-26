@@ -418,8 +418,16 @@ class MatchingRoutes:
             itsusername = data.get('itsusername')
             
             try:
-                to_user = itsusername 
+                # 在user_data中查询昵称对应的username
+                if not itsusername:
+                    return jsonify({'error': 'itsusername is required'}), 400
                 
+                to_user = db.execute_custom_sql(
+                    "SELECT username FROM user_data WHERE nickname = ?",
+                    (itsusername,)
+                )
+                
+                to_user = to_user[0]['username'] if to_user else None
                 if not to_user:
                     return jsonify({'error': 'Invalid itsusername'}), 400
                 
