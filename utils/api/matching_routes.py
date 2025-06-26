@@ -426,8 +426,10 @@ class MatchingRoutes:
                     "SELECT username FROM user_data WHERE nickname = ?",
                     (itsusername,)
                 )
-                
+                                
                 to_user = to_user[0]['username'] if to_user else None
+                print("---------------------"+to_user+"---------------------"+username )
+
                 if not to_user:
                     return jsonify({'error': 'Invalid itsusername'}), 400
                 

@@ -207,6 +207,8 @@ class Platform:
         """同态乘法运算"""
         c1_1, c2_1 = ciphertext1
         c1_2, c2_2 = ciphertext2
+        # print(ciphertext1)
+        # print(ciphertext2)
         
         # 同态乘法: Enc(m1) * Enc(m2) = Enc(m1 * m2)
         c1_result = (c1_1 * c1_2) % self.p
@@ -250,13 +252,12 @@ class Platform:
         # 2. 再随机化匹配结果
         final_result_cipher = self.rerandomize(result_cipher)
         
-        # 3. 条件传输：直接传输原始联系方式密文，不进行同态运算
+        # 3. 传输联系方式密文
         # 让用户端根据匹配结果决定是否能成功解密
-        print("\n平台采用条件传输方案:")
         print("平台分发数据:")
-        print(f"  用户1的加密联系方式长度: {len(contact1_encrypted)} bytes")
-        print(f"  用户2的加密联系方式长度: {len(contact2_encrypted)} bytes")
-        print(f"  联系方式密钥保持原始形式，由用户端控制解密")
+        print(f"  用户1的加密联系方式: {contact1_encrypted} ")
+        print(f"  用户2的加密联系方式: {contact2_encrypted} ")
+        # print(f"  联系方式密钥保持原始形式，由用户端控制解密")
         
         # 返回：匹配结果密文，原始联系方式数据
         return (final_result_cipher, 
@@ -348,13 +349,12 @@ def demo_secure_matching():
         bob_decrypted_contact = bob.decrypt_contact_info(alice_contact_key_cipher, alice_encrypted_contact, bob_result)
         
         if expected_match:
-            # 匹配成功时应该能解密出正确的联系方式
             print(f"Alice获得Bob联系方式: {alice_decrypted_contact}")
             print(f"Bob获得Alice联系方式: {bob_decrypted_contact}")
             
             contact_exchange_success = (
-                alice_decrypted_contact == bob.contact_info and 
-                bob_decrypted_contact == alice.contact_info
+                alice_decrypted_contact == alice.contact_info and 
+                bob_decrypted_contact == bob.contact_info
             )
             print(f"联系方式交换: {'✅ 成功' if contact_exchange_success else '❌ 失败'}")
         else:
@@ -366,24 +366,6 @@ def demo_secure_matching():
                 print(f"  Alice意外解密出: {alice_decrypted_contact}")
             if bob_decrypted_contact is not None:
                 print(f"  Bob意外解密出: {bob_decrypted_contact}")
-        
-        # 隐私保护分析
-        print(f"\n--- 隐私保护分析 ---")
-        if not expected_match:
-            if alice_choice and not bob_choice:
-                print("✅ Alice选择接受但匹配失败，无法得知Bob的具体选择")
-                print("✅ Alice无法获得Bob的联系方式")
-            elif not alice_choice and bob_choice:
-                print("✅ Bob选择接受但匹配失败，无法得知Alice的具体选择")
-                print("✅ Bob无法获得Alice的联系方式")
-            else:
-                print("✅ 双方都拒绝，从结果可推断对方必然拒绝")
-                print("✅ 但双方都无法获得对方联系方式")
-        else:
-            print("✅ 匹配成功，双方都知道对方选择了接受")
-            print("✅ 双方成功交换联系方式")
-        
-        print("✅ 平台无法得知用户的具体选择和联系方式")
     
     print("\n" + "=" * 60)
     print("🎉 演示完成！系统成功实现了以下目标：")
@@ -392,7 +374,6 @@ def demo_secure_matching():
     print("3. ✅ 匹配失败时，用户无法推断对方的选择")
     print("4. ✅ 匹配失败时，用户无法获得对方的联系方式")
     print("5. ✅ 只有双方都接受时才会匹配成功并交换联系方式")
-    print("6. ✅ 系统具有完整的隐私保护特性")
     print("=" * 60)
 
 if __name__ == "__main__":
