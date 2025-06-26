@@ -9,3 +9,5 @@
 *.txt
 !requirements.txt
 *.json
+/dist
+/build
