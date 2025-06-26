@@ -13,4 +13,4 @@
     1. Run `pyinstaller main.spec`
     2. The *ELF* will be built at `dist/matching_system`
 
-# 详见：[此处](https://github.klizz111.io/pk/match_system)
+# 详见：[此处](https://klizz111.github.io/pk/match_system)
