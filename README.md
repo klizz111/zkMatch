@@ -1,5 +1,7 @@
 # 基于同态加密的网恋匹配系统
 
+This is discrete log version and ECC verison is at [here](https://github.com/klizz111/Hackerson-251020)
+
 ## Usage
 1. `pipenv` (recommend)
     1. `pipenv install -r ./requirements.txt`
